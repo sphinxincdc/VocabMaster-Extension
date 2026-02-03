@@ -1,0 +1,13 @@
+name = "hord-license-service"
+main = "scripts/license_worker_example.mjs"
+compatibility_date = "2026-02-03"
+
+# Replace with your real D1 DB id
+[[d1_databases]]
+binding = "DB"
+database_name = "hord-license-db"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+[vars]
+# Optional: override default product id
+PRODUCT_ID = "hord.vocabmaster.chrome"

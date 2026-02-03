@@ -3,33 +3,125 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>全能英语单词本PRO - 设置（BYOK）</title>
+  <title>霍德英语学习管家 - 设置（BYOK）</title>
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="theme.css" />
   <style>
-    body{margin:0;background:#0b1220;color:#e5e7eb;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial;}
-    .wrap{max-width:980px;margin:0 auto;padding:18px 14px 40px;}
-    .hd{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:16px 16px}
-    .hd h1{margin:0;font-size:20px;font-weight:900}
-    .hd p{margin:8px 0 0;color:rgba(229,231,235,.72);line-height:1.5}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
-    .card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.10);border-radius:18px;padding:14px}
-    .card h2{margin:0 0 10px;font-size:15px;font-weight:900}
-    .row{display:flex;flex-direction:column;gap:6px;margin:10px 0}
-    label{font-size:12px;color:rgba(229,231,235,.72)}
-    input{border-radius:14px;border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.25);color:#fff;padding:10px 12px;font-size:13px;outline:none}
-    .actions{display:flex;gap:10px;margin-top:12px;align-items:center}
-    .btn{border:0;border-radius:14px;padding:10px 12px;font-weight:900;cursor:pointer;background:#fff;color:#111827}
-    .btn.secondary{background:rgba(255,255,255,.10);color:#e5e7eb;border:1px solid rgba(255,255,255,.14)}
-    .btn.mini{padding:6px 10px;font-size:12px;border-radius:999px}
-    .status{font-size:12px;color:rgba(229,231,235,.75)}
-    .note{font-size:12px;color:rgba(229,231,235,.65);line-height:1.45}
+    body{
+      margin:0;
+      background:radial-gradient(1200px 420px at 10% -10%, rgba(79,70,229,.22), transparent 60%),
+                 radial-gradient(900px 380px at 110% 0%, rgba(124,58,237,.18), transparent 55%),
+                 linear-gradient(180deg,var(--vb-bg),rgba(238,242,255,.85));
+      color:var(--vb-text);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+    }
+    .wrap{max-width:1080px;margin:0 auto;padding:18px 14px 40px;}
+    .wrap,.wrap *{box-sizing:border-box}
+    .hd{
+      background:var(--vb-surface);
+      border:1px solid var(--vb-border);
+      border-radius:var(--vb-r-card);
+      padding:var(--vb-card-pad);
+      box-shadow:var(--vb-shadow-md);
+    }
+    .hd h1{margin:0;font-size:var(--vb-fs-h1);font-weight:900}
+    .hd p{margin:8px 0 0;color:var(--vb-muted);line-height:1.5}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;min-width:0}
+    .card{
+      background:var(--vb-surface);
+      border:1px solid var(--vb-border);
+      border-radius:var(--vb-r-card);
+      padding:var(--vb-card-pad);
+      box-shadow:var(--vb-shadow-md);
+      min-width:0;
+      overflow:hidden;
+    }
+    .card h2{margin:0 0 5px;font-size:var(--vb-fs-h2);font-weight:900;display:flex;align-items:center;gap:8px;justify-content:space-between;flex-wrap:nowrap}
+    .row{display:flex;flex-direction:column;gap:5px;margin:7px 0;min-width:0}
+    label{font-size:var(--vb-fs-cap);color:var(--vb-muted)}
+    input{
+      border-radius:var(--vb-r-input);
+      border:1px solid var(--vb-border);
+      background:#fff;
+      color:var(--vb-text);
+      padding:10px 12px;
+      font-size:var(--vb-fs-body);
+      outline:none;
+      box-sizing:border-box;
+    }
+    textarea{
+      border-radius:var(--vb-r-input);
+      border:1px solid var(--vb-border);
+      background:#fff;
+      color:var(--vb-text);
+      padding:10px 12px;
+      font-size:12px;
+      outline:none;
+      box-sizing:border-box;
+      width:100%;
+      min-height:84px;
+      resize:vertical;
+    }
+    .actions{display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap;position:sticky;bottom:10px;z-index:20;background:var(--vb-surface);padding:8px;border:1px solid var(--vb-border);border-radius:var(--vb-r-card);box-shadow:var(--vb-shadow-md)}
+    .btn{border:1px solid var(--vb-border);border-radius:var(--vb-r-btn);padding:10px 12px;font-weight:900;cursor:pointer;background:#fff;color:var(--vb-text)}
+    .btn.secondary{background:rgba(15,23,42,.05);color:var(--vb-text);border:1px solid var(--vb-border)}
+    .btn.mini,.testBtn{padding:6px 10px;font-size:12px;border-radius:999px;min-width:74px;justify-content:center}
+    #save{border:0;background:var(--vb-brand-grad);color:#fff;box-shadow:var(--vb-shadow-md)}
+    .status{font-size:var(--vb-fs-cap);color:var(--vb-muted)}
+    .note{font-size:var(--vb-fs-cap);color:var(--vb-muted);line-height:1.4;opacity:.82}
+    .status{opacity:.86}
+    .testBtn[data-state="idle"]{color:var(--vb-text)}
+    .testBtn[data-state="pending"]{color:#6b7280}
+    .testBtn[data-state="success"]{color:#166534;border-color:#86efac;background:#ecfdf5}
+    .testBtn[data-state="fail"]{color:#991b1b;border-color:#fca5a5;background:#fef2f2}
+    .inputWrap{position:relative;width:100%;min-width:0}
+    .inputWrap input{display:block;width:100%;max-width:100%;min-width:0;padding-right:44px;box-sizing:border-box}
+    .eyeBtn{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:1px solid var(--vb-border);background:rgba(15,23,42,.06);color:var(--vb-muted);width:28px;height:28px;border-radius:999px;cursor:pointer;font-size:13px;line-height:1;display:inline-flex;align-items:center;justify-content:center;padding:0;min-width:28px;flex:0 0 28px}
+    .authActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .authState{margin-top:10px;padding:10px;border-radius:12px;border:1px solid var(--vb-border);background:rgba(15,23,42,.03);font-size:12px;line-height:1.5;white-space:pre-wrap}
+    .authState.ok{border-color:#86efac;background:#ecfdf5;color:#166534}
+    .authState.warn{border-color:#fcd34d;background:#fffbeb;color:#92400e}
+    .authState.err{border-color:#fca5a5;background:#fef2f2;color:#991b1b}
+    .checkInline{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--vb-muted)}
+    body.vb-force-dark .actions{background:var(--vb-surface);border-color:var(--vb-border)}
+    body.vb-force-dark .testBtn[data-state="success"]{color:#86efac;background:rgba(22,101,52,.28);border-color:#166534}
+    body.vb-force-dark .testBtn[data-state="fail"]{color:#fecaca;background:rgba(153,27,27,.30);border-color:#7f1d1d}
     @media(max-width:860px){.grid{grid-template-columns:1fr;}}
-  </style>
+  
+  @media (prefers-color-scheme: dark){
+    body{
+      background:radial-gradient(1200px 420px at 10% -10%, rgba(124,58,237,.34), transparent 60%),
+                 radial-gradient(900px 380px at 110% 0%, rgba(91,33,182,.28), transparent 55%),
+                 linear-gradient(180deg,var(--vb-bg),rgba(10,8,25,.96));
+    }
+    .hd,.card{background:var(--vb-surface);border-color:var(--vb-border)}
+    .btn{background:rgba(15,23,42,.36);border-color:var(--vb-border);color:var(--vb-text)}
+    #save{background:var(--vb-brand-grad);color:#fff;border:0}
+    input{background:rgba(15,23,42,.36);border-color:var(--vb-border);color:var(--vb-text)}
+    textarea{background:rgba(15,23,42,.36);border-color:var(--vb-border);color:var(--vb-text)}
+    input::placeholder{color:rgba(237,233,254,.45)}
+  }
+
+
+
+  body.vb-force-dark{
+    background:radial-gradient(1200px 420px at 10% -10%, rgba(124,58,237,.34), transparent 60%),
+               radial-gradient(900px 380px at 110% 0%, rgba(91,33,182,.28), transparent 55%),
+               linear-gradient(180deg,var(--vb-bg),rgba(10,8,25,.96));
+  }
+  body.vb-force-dark .hd,body.vb-force-dark .card{background:var(--vb-surface);border-color:var(--vb-border)}
+  body.vb-force-dark .btn{background:rgba(15,23,42,.36);border-color:var(--vb-border);color:var(--vb-text)}
+  body.vb-force-dark #save{background:var(--vb-brand-grad);color:#fff;border:0}
+  body.vb-force-dark input{background:rgba(15,23,42,.36);border-color:var(--vb-border);color:var(--vb-text)}
+  body.vb-force-dark textarea{background:rgba(15,23,42,.36);border-color:var(--vb-border);color:var(--vb-text)}
+  body.vb-force-dark input::placeholder{color:rgba(237,233,254,.45)}
+
+</style>
 </head>
 <body>
   <div class="wrap">
     <div class="hd">
-      <h1>设置（BYOK - Bring Your Own Key）</h1>
+      <h1>⚙️ 设置（BYOK - Bring Your Own Key）</h1>
       <p>
         这里放所有 API Key。<b>Key 可留空</b>：会走免费/无 Key 的 fallback（例如：Google 翻译/公开词典入口）。
         <br/>接口失败会“静默降级”（不显示结果即可），不会阻塞划词弹窗与单词本功能。
@@ -40,17 +132,34 @@
       <div class="card">
         <h2>授权（可选）</h2>
         <div class="row">
-          <label for="licenseCode">License Code（填了就视为 Pro）</label>
-          <input id="licenseCode" placeholder="例如：XXXX-XXXX-XXXX" />
+          <label for="licenseCode">License Key</label>
+          <div class="inputWrap"><input id="licenseCode" placeholder="例如：XXXX-XXXX-XXXX" /><button type="button" class="eyeBtn" data-eye-target="licenseCode" title="显示/隐藏">👁</button></div>
         </div>
-        <div class="note">未填：默认 free（有上限）。</div>
+        <div class="row">
+          <label for="authApiBase">授权 API 地址</label>
+          <input id="authApiBase" placeholder="例如：https://license.your-domain.com" />
+        </div>
+        <div class="row">
+          <label for="authPublicKeyJwk">授权公钥 JWK（Ed25519）</label>
+          <textarea id="authPublicKeyJwk" placeholder='{"kty":"OKP","crv":"Ed25519","x":"..."}'></textarea>
+        </div>
+        <label class="checkInline"><input id="authAllowUnsignedCert" type="checkbox" />开发模式：允许未签名证书（仅本地联调）</label>
+        <div class="authActions">
+          <button id="activateLicense" class="btn secondary mini">激活授权</button>
+          <button id="deactivateLicense" class="btn secondary mini">解绑本机</button>
+          <button id="refreshAuth" class="btn secondary mini">刷新状态</button>
+          <button id="validatePublicKey" class="btn secondary mini">校验公钥</button>
+          <button id="clearAuthLocal" class="btn secondary mini">清除本地授权</button>
+        </div>
+        <div id="authState" class="authState">授权状态：未检查</div>
+        <div class="note">免费版限制：单词最多 200、批注最多 10；专业版解锁导入导出、批量操作、高级复习与高级导图模板。</div>
       </div>
 
       <div class="card">
-        <h2>Azure Translator（优先） <button class="btn secondary mini" data-test-provider="azure">测试</button></h2>
+        <h2>Azure Translator（优先） <button class="btn secondary mini testBtn" data-state="idle" data-test-provider="azure">🧪 测试</button></h2>
         <div class="row">
           <label for="azureKey">Key</label>
-          <input id="azureKey" placeholder="Azure Translator Key（可留空）" />
+          <div class="inputWrap"><input id="azureKey" placeholder="Azure Translator Key（可留空）" /><button type="button" class="eyeBtn" data-eye-target="azureKey" title="显示/隐藏">👁</button></div>
         </div>
         <div class="row">
           <label for="azureRegion">Region</label>
@@ -59,54 +168,54 @@
       </div>
 
       <div class="card">
-        <h2>腾讯翻译（可选） <button class="btn secondary mini" data-test-provider="tencent">测试</button></h2>
+        <h2>腾讯翻译（可选） <button class="btn secondary mini testBtn" data-state="idle" data-test-provider="tencent">🧪 测试</button></h2>
         <div class="row">
           <label for="tencentId">SecretId</label>
-          <input id="tencentId" placeholder="可留空" />
+          <div class="inputWrap"><input id="tencentId" placeholder="可留空" /><button type="button" class="eyeBtn" data-eye-target="tencentId" title="显示/隐藏">👁</button></div>
         </div>
         <div class="row">
           <label for="tencentKey">SecretKey</label>
-          <input id="tencentKey" placeholder="可留空" />
+          <div class="inputWrap"><input id="tencentKey" placeholder="可留空" /><button type="button" class="eyeBtn" data-eye-target="tencentKey" title="显示/隐藏">👁</button></div>
         </div>
       </div>
 
       <div class="card">
-        <h2>阿里云翻译（可选） <button class="btn secondary mini" data-test-provider="aliyun">测试</button></h2>
+        <h2>阿里云翻译（可选） <button class="btn secondary mini testBtn" data-state="idle" data-test-provider="aliyun">🧪 测试</button></h2>
         <div class="row">
           <label for="aliyunId">AccessKeyId</label>
-          <input id="aliyunId" placeholder="可留空" />
+          <div class="inputWrap"><input id="aliyunId" placeholder="可留空" /><button type="button" class="eyeBtn" data-eye-target="aliyunId" title="显示/隐藏">👁</button></div>
         </div>
         <div class="row">
           <label for="aliyunKey">AccessKeySecret</label>
-          <input id="aliyunKey" placeholder="可留空" />
+          <div class="inputWrap"><input id="aliyunKey" placeholder="可留空" /><button type="button" class="eyeBtn" data-eye-target="aliyunKey" title="显示/隐藏">👁</button></div>
         </div>
       </div>
 
       <div class="card">
-        <h2>彩云小译（可选） <button class="btn secondary mini" data-test-provider="caiyun">测试</button></h2>
+        <h2>彩云小译（可选） <button class="btn secondary mini testBtn" data-state="idle" data-test-provider="caiyun">🧪 测试</button></h2>
         <div class="row">
           <label for="caiyunToken">Token</label>
-          <input id="caiyunToken" placeholder="可留空" />
+          <div class="inputWrap"><input id="caiyunToken" placeholder="可留空" /><button type="button" class="eyeBtn" data-eye-target="caiyunToken" title="显示/隐藏">👁</button></div>
         </div>
       </div>
 
       <div class="card">
-        <h2>有道（可选） <button class="btn secondary mini" data-test-provider="youdao">测试</button></h2>
+        <h2>有道（可选） <button class="btn secondary mini testBtn" data-state="idle" data-test-provider="youdao">🧪 测试</button></h2>
         <div class="row">
           <label for="youdaoAppKey">AppKey</label>
-          <input id="youdaoAppKey" placeholder="可留空" />
+          <div class="inputWrap"><input id="youdaoAppKey" placeholder="可留空" /><button type="button" class="eyeBtn" data-eye-target="youdaoAppKey" title="显示/隐藏">👁</button></div>
         </div>
         <div class="row">
           <label for="youdaoAppSecret">AppSecret</label>
-          <input id="youdaoAppSecret" placeholder="可留空" />
+          <div class="inputWrap"><input id="youdaoAppSecret" placeholder="可留空" /><button type="button" class="eyeBtn" data-eye-target="youdaoAppSecret" title="显示/隐藏">👁</button></div>
         </div>
       </div>
     </div>
 
     <div class="actions">
-      <button id="save" class="btn">保存</button>
-      <button id="openManager" class="btn secondary">管理单词本</button>
-      <button id="openReview" class="btn secondary">艾宾浩斯测试</button>
+      <button id="save" class="btn">💾 保存</button>
+      <button id="openManager" class="btn secondary">📚 管理单词本</button>
+      <button id="openReview" class="btn secondary">🧠 艾宾浩斯测试</button>
       <span id="status" class="status"></span>
     </div>
 

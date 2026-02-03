@@ -25,7 +25,32 @@ ensureDbVersion();
  * (Translation providers can be added back later.)
  */
 
-const LIMIT_FREE = 999999; // dev: unlimited
+const LIMIT_FREE = 200;
+const LIMIT_FREE_NOTES = 10;
+const AUTH_SCHEMA_VERSION = 1;
+const AUTH_PRODUCT_ID = 'hord.vocabmaster.chrome';
+
+const FREE_ENTITLEMENTS = Object.freeze({
+  word_limit: LIMIT_FREE,
+  note_limit: LIMIT_FREE_NOTES,
+  import_export: false,
+  bulk_edit: false,
+  review_mode: 'basic',
+  quote_export_enabled: true,
+  quote_templates: ['light'],
+  quote_advanced_settings: false,
+});
+
+const PRO_ENTITLEMENTS = Object.freeze({
+  word_limit: -1,
+  note_limit: -1,
+  import_export: true,
+  bulk_edit: true,
+  review_mode: 'advanced',
+  quote_export_enabled: true,
+  quote_templates: ['light', 'dark', 'hordSignature', 'editorial', 'gradientSoft', 'boldImpact'],
+  quote_advanced_settings: true,
+});
 
 function uniqLower(arr){
   const s = new Set();
@@ -109,9 +134,241 @@ function normalizeVocabKeys(db){
   db.vocabAudio = normalizeKeyedMap(db.vocabAudio, mergePreferNonEmpty);
 }
 
-function isPro(db){
-  const code = (db.licenseCode || '').trim();
-  return code.length > 0;
+function cloneEntitlements(src){
+  const out = { ...FREE_ENTITLEMENTS };
+  if(!src || typeof src !== 'object') return out;
+  for(const k of Object.keys(out)){
+    if(src[k] !== undefined) out[k] = src[k];
+  }
+  return out;
+}
+
+function normalizeLimit(value, fallback){
+  const n = Number(value);
+  if(!Number.isFinite(n)) return fallback;
+  if(n < 0) return -1;
+  return Math.max(0, Math.floor(n));
+}
+
+function normalizeEntitlements(src){
+  const base = cloneEntitlements(src);
+  base.word_limit = normalizeLimit(base.word_limit, LIMIT_FREE);
+  base.note_limit = normalizeLimit(base.note_limit, LIMIT_FREE_NOTES);
+  base.import_export = !!base.import_export;
+  base.bulk_edit = !!base.bulk_edit;
+  base.review_mode = String(base.review_mode || 'basic') === 'advanced' ? 'advanced' : 'basic';
+  base.quote_export_enabled = base.quote_export_enabled !== false;
+  base.quote_advanced_settings = !!base.quote_advanced_settings;
+  const templates = Array.isArray(base.quote_templates) ? base.quote_templates : [];
+  base.quote_templates = Array.from(new Set(templates.map(x=>String(x||'').trim()).filter(Boolean)));
+  if(!base.quote_templates.length){
+    base.quote_templates = base.quote_advanced_settings ? PRO_ENTITLEMENTS.quote_templates.slice() : FREE_ENTITLEMENTS.quote_templates.slice();
+  }
+  return base;
+}
+
+function getDefaultAuthState(){
+  return {
+    schemaVersion: AUTH_SCHEMA_VERSION,
+    source: 'free',
+    status: 'inactive',
+    plan: 'free',
+    productId: AUTH_PRODUCT_ID,
+    expiresAt: 0,
+    cert: null,
+    entitlements: normalizeEntitlements(FREE_ENTITLEMENTS),
+    lastValidatedAt: 0,
+  };
+}
+
+function normalizeAuthState(auth){
+  const base = getDefaultAuthState();
+  if(!auth || typeof auth !== 'object') return base;
+  const out = { ...base, ...auth };
+  out.schemaVersion = AUTH_SCHEMA_VERSION;
+  out.productId = String(out.productId || AUTH_PRODUCT_ID);
+  out.source = String(out.source || 'free');
+  out.status = String(out.status || 'inactive');
+  out.plan = String(out.plan || (out.status === 'active' ? 'pro_annual' : 'free'));
+  out.expiresAt = Number(out.expiresAt) || 0;
+  out.lastValidatedAt = Number(out.lastValidatedAt) || 0;
+  out.entitlements = normalizeEntitlements(out.entitlements);
+  if(!out.cert || typeof out.cert !== 'object') out.cert = null;
+  return out;
+}
+
+function getFeatureStatus(db){
+  const auth = normalizeAuthState(db?.auth);
+  const now = Date.now();
+  if(auth.status === 'active' && auth.expiresAt > now){
+    return {
+      auth,
+      entitlements: normalizeEntitlements(auth.entitlements),
+      isPro: auth.plan !== 'free',
+      source: auth.source || 'certificate',
+    };
+  }
+  const legacyCode = String(db?.licenseCode || db?.licenseKey || '').trim();
+  if(legacyCode){
+    return {
+      auth: {
+        ...auth,
+        source: 'legacy_license_code',
+        status: 'active',
+        plan: 'pro_annual',
+        expiresAt: 0,
+      },
+      entitlements: normalizeEntitlements(PRO_ENTITLEMENTS),
+      isPro: true,
+      source: 'legacy_license_code',
+    };
+  }
+  return {
+    auth: {
+      ...auth,
+      source: 'free',
+      status: 'inactive',
+      plan: 'free',
+      expiresAt: 0,
+      entitlements: normalizeEntitlements(FREE_ENTITLEMENTS),
+    },
+    entitlements: normalizeEntitlements(FREE_ENTITLEMENTS),
+    isPro: false,
+    source: 'free',
+  };
+}
+
+function isUnlimited(limit){
+  return Number(limit) < 0;
+}
+
+function getWordLimit(entitlements){
+  return normalizeLimit(entitlements?.word_limit, LIMIT_FREE);
+}
+
+function getNoteLimit(entitlements){
+  return normalizeLimit(entitlements?.note_limit, LIMIT_FREE_NOTES);
+}
+
+function countWordNotes(db){
+  const notes = db?.vocabNotes && typeof db.vocabNotes === 'object' ? db.vocabNotes : {};
+  let count = 0;
+  for(const v of Object.values(notes)){
+    if(String(v || '').trim()) count += 1;
+  }
+  return count;
+}
+
+function countSentenceNotes(db){
+  const list = Array.isArray(db?.collectedSentences) ? db.collectedSentences : [];
+  let count = 0;
+  for(const item of list){
+    if(String(item?.note || '').trim()) count += 1;
+  }
+  return count;
+}
+
+function countAllNotes(db){
+  return countWordNotes(db) + countSentenceNotes(db);
+}
+
+function canAddWords(db, entitlements, incomingCount){
+  const limit = getWordLimit(entitlements);
+  if(isUnlimited(limit)) return {ok:true};
+  const current = Array.isArray(db?.vocabList) ? db.vocabList.length : 0;
+  const remaining = Math.max(0, limit - current);
+  return {ok: incomingCount <= remaining, limit, remaining, current};
+}
+
+function canAddNotes(db, entitlements, incomingCount){
+  const limit = getNoteLimit(entitlements);
+  if(isUnlimited(limit)) return {ok:true};
+  const current = countAllNotes(db);
+  const remaining = Math.max(0, limit - current);
+  return {ok: incomingCount <= remaining, limit, remaining, current};
+}
+
+function buildAuthFromCertificate(rawCert){
+  const cert = rawCert && typeof rawCert === 'object' ? rawCert : null;
+  if(!cert) return null;
+  const productId = String(cert.product_id || cert.productId || '').trim();
+  if(productId && productId !== AUTH_PRODUCT_ID) return null;
+  const expiresAt = Number(cert.expires_at || cert.expiresAt || 0);
+  if(!Number.isFinite(expiresAt) || expiresAt <= 0) return null;
+  const now = Date.now();
+  return normalizeAuthState({
+    source: 'certificate',
+    status: expiresAt > now ? 'active' : 'expired',
+    plan: String(cert.plan || 'pro_annual'),
+    productId: AUTH_PRODUCT_ID,
+    expiresAt,
+    cert,
+    entitlements: normalizeEntitlements(cert.entitlements || PRO_ENTITLEMENTS),
+    lastValidatedAt: now,
+  });
+}
+
+function toSortedObject(value){
+  if(Array.isArray(value)) return value.map(toSortedObject);
+  if(value && typeof value === 'object'){
+    const out = {};
+    for(const key of Object.keys(value).sort()){
+      out[key] = toSortedObject(value[key]);
+    }
+    return out;
+  }
+  return value;
+}
+
+function stableStringify(value){
+  return JSON.stringify(toSortedObject(value));
+}
+
+function base64ToBytes(input){
+  const raw = String(input || '').trim();
+  if(!raw) return new Uint8Array();
+  const normalized = raw.replace(/-/g, '+').replace(/_/g, '/');
+  const pad = normalized.length % 4 === 0 ? '' : '='.repeat(4 - (normalized.length % 4));
+  const bin = atob(normalized + pad);
+  const out = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+function certPayloadForVerify(cert){
+  const out = {};
+  for(const [k, v] of Object.entries(cert || {})){
+    if(k === 'sig' || k === 'signature') continue;
+    out[k] = v;
+  }
+  return out;
+}
+
+async function verifyCertificateSignature(cert){
+  const sigRaw = cert?.sig || cert?.signature || '';
+  if(!sigRaw) return {ok:false, error:'CERT_SIGNATURE_MISSING'};
+  const cfg = await new Promise(res=>chrome.storage.local.get(['authPublicKeyJwk', 'authAllowUnsignedCert'], res));
+  const jwkRaw = String(cfg.authPublicKeyJwk || '').trim();
+  if(!jwkRaw){
+    if(cfg.authAllowUnsignedCert) return {ok:true, bypassed:true};
+    return {ok:false, error:'AUTH_PUBLIC_KEY_MISSING'};
+  }
+  let jwk;
+  try{
+    jwk = JSON.parse(jwkRaw);
+  }catch(_){
+    return {ok:false, error:'AUTH_PUBLIC_KEY_INVALID_JSON'};
+  }
+  try{
+    const key = await crypto.subtle.importKey('jwk', jwk, {name:'Ed25519'}, false, ['verify']);
+    const payload = certPayloadForVerify(cert);
+    const body = new TextEncoder().encode(stableStringify(payload));
+    const sig = base64ToBytes(sigRaw);
+    const ok = await crypto.subtle.verify({name:'Ed25519'}, key, sig, body);
+    return ok ? {ok:true} : {ok:false, error:'CERT_SIGNATURE_INVALID'};
+  }catch(_e){
+    return {ok:false, error:'CERT_VERIFY_FAILED'};
+  }
 }
 
 function nowTs(){ return Date.now(); }
@@ -440,7 +697,7 @@ async function getDB(){
   // Read both packed DB and legacy root keys, then MERGE (never overwrite user data with smaller snapshots).
   const keys = [KEY_DB,
     'vocabList','vocabDict','vocabNotes','vocabMeta','vocabEn','vocabPhonetics','vocabAudio','yellowList','greenList',
-    'collectedSentences','sentenceDict','sentenceNotes','sentenceMeta','difficultList','config','licenseCode','licenseKey','isPro'
+    'collectedSentences','sentenceDict','sentenceNotes','sentenceMeta','difficultList','config','licenseCode','licenseKey','isPro','auth'
   ];
   const res = await new Promise(r=>chrome.storage.local.get(keys, r));
   const packed = res && res[KEY_DB] ? res[KEY_DB] : null;
@@ -465,10 +722,14 @@ async function getDB(){
     config: res.config || {},
     licenseCode: res.licenseCode || res.licenseKey || '',
     isPro: !!res.isPro,
+    auth: normalizeAuthState(res.auth),
   } : null;
 
   // If only packed exists and no root data, return packed.
-  if(packed && !root){ return packed; }
+  if(packed && !root){
+    packed.auth = normalizeAuthState(packed.auth);
+    return packed;
+  }
 
   // Merge helper
   const mergeDb = (a, b) => {
@@ -543,6 +804,10 @@ async function getDB(){
 
     out.licenseCode = (a?.licenseCode || a?.licenseKey || b?.licenseCode || b?.licenseKey || '').trim();
     out.isPro = !!(a?.isPro || b?.isPro);
+    const authA = normalizeAuthState(a?.auth);
+    const authB = normalizeAuthState(b?.auth);
+    const pickA = (authA.status === 'active' && authA.expiresAt > authB.expiresAt) || (authA.lastValidatedAt >= authB.lastValidatedAt);
+    out.auth = pickA ? authA : authB;
 
     return out;
   };
@@ -555,13 +820,16 @@ async function getDB(){
       collectedSentences: [], sentenceDict:{}, sentenceNotes:{}, sentenceMeta:{},
       difficultList: [], config:{},
       licenseCode:'', isPro:false,
+      auth: normalizeAuthState(null),
     };
     try{ await setDB(empty); }catch(_){}
+    empty.auth = normalizeAuthState(empty.auth);
     return empty;
   }
 
   // If only root exists, migrate into packed.
   if(!packed && root){
+    root.auth = normalizeAuthState(root.auth);
     try{ await setDB(root); }catch(_){}
     return root;
   }
@@ -583,6 +851,7 @@ async function getDB(){
     }
   }catch(_){}
 
+  merged.auth = normalizeAuthState(merged.auth);
   return merged;
 }
 
@@ -610,7 +879,9 @@ async function setDB(db){
     // keep these if present
     licenseCode: db.licenseCode || db.licenseKey || '',
     isPro: !!db.isPro,
+    auth: normalizeAuthState(db.auth),
   };
+  db.auth = normalizeAuthState(db.auth);
   return await new Promise(res=>chrome.storage.local.set({[KEY_DB]: db, ...flat}, res));
 }
 
@@ -620,15 +891,17 @@ async function upsertWord(payload){
 
   const db = await getDB();
   normalizeVocabKeys(db);
-  const pro = isPro(db);
+  const feature = getFeatureStatus(db);
+  const entitlements = feature.entitlements;
 
   db.vocabList = uniqLower(db.vocabList||[]);
-  if(!db.vocabList.includes(word)) db.vocabList.push(word);
-
-  if(!pro && db.vocabList.length > LIMIT_FREE){
-    // rollback add
-    db.vocabList = db.vocabList.filter(w=>w!==word);
-    return {ok:false, error:`FREE_LIMIT_${LIMIT_FREE}`};
+  const hasWord = db.vocabList.includes(word);
+  if(!hasWord){
+    const room = canAddWords(db, entitlements, 1);
+    if(!room.ok){
+      return {ok:false, error:`FREE_LIMIT_${room.limit}`};
+    }
+    db.vocabList.push(word);
   }
 
   db.vocabDict = db.vocabDict || {};
@@ -646,7 +919,15 @@ async function upsertWord(payload){
   }
   if(payload.note !== undefined){
     const n = String(payload.note||'').trim();
+    const hadNote = !!String(db.vocabNotes[word] || '').trim();
+    if(n && !hadNote){
+      const noteRoom = canAddNotes(db, entitlements, 1);
+      if(!noteRoom.ok){
+        return {ok:false, error:`NOTE_LIMIT_${noteRoom.limit}`};
+      }
+    }
     if(n) db.vocabNotes[word] = n;
+    else delete db.vocabNotes[word];
   }
   if(Array.isArray(payload.englishMeaning) && payload.englishMeaning.length){
     db.vocabEn[word] = payload.englishMeaning.slice(0, 6);
@@ -680,6 +961,8 @@ async function addSentence(payload){
   const text = String(payload.text||'').trim();
   if(!text) return {ok:false, error:'empty sentence'};
   const db = await getDB();
+  const feature = getFeatureStatus(db);
+  const entitlements = feature.entitlements;
   db.collectedSentences = db.collectedSentences || [];
   const key = text.toLowerCase();
   const existingByText = new Map(db.collectedSentences.map(x=>{
@@ -696,9 +979,21 @@ async function addSentence(payload){
     if(!ex.translation && translation) ex.translation = translation;
     if(!ex.url && url) ex.url = url;
     if(!ex.title && title) ex.title = title;
-    if(!ex.note && note) ex.note = note;
+    if(!ex.note && note){
+      const noteRoom = canAddNotes(db, entitlements, 1);
+      if(!noteRoom.ok){
+        return {ok:false, error:`NOTE_LIMIT_${noteRoom.limit}`};
+      }
+      ex.note = note;
+    }
     await setDB(db);
   }else if(!ex){
+    if(note){
+      const noteRoom = canAddNotes(db, entitlements, 1);
+      if(!noteRoom.ok){
+        return {ok:false, error:`NOTE_LIMIT_${noteRoom.limit}`};
+      }
+    }
     db.collectedSentences.push({text, translation, url, title, note, createdAt: nowTs()});
     await setDB(db);
   }
@@ -710,6 +1005,19 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     try{
       if(!msg || !msg.type) return sendResponse({ok:false, error:'no type'});
 
+      if(msg.type === 'OP_OPEN_MANAGER_EXPORT'){
+        const payload = msg.payload || msg;
+        const quoteId = Number(payload.quoteId || 0);
+        const url = new URL(chrome.runtime.getURL('manager.html'));
+        url.searchParams.set('tab', 'sentences');
+        url.searchParams.set('quoteExport', '1');
+        if(Number.isFinite(quoteId) && quoteId > 0){
+          url.searchParams.set('quoteId', String(quoteId));
+        }
+        await chrome.tabs.create({ url: url.toString() });
+        return sendResponse({ok:true});
+      }
+
       if(msg.type === 'UPSERT_WORD'){
         return sendResponse(await upsertWord(msg));
       }
@@ -720,7 +1028,47 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       }
       if(msg.type === 'OP_GET_STATE'){
         const db = await getDB();
-        return sendResponse({ok:true, db});
+        const feature = getFeatureStatus(db);
+        db.auth = {
+          ...normalizeAuthState(db.auth),
+          source: feature.source,
+          status: feature.isPro ? 'active' : 'inactive',
+          plan: feature.isPro ? 'pro_annual' : 'free',
+          entitlements: feature.entitlements,
+        };
+        return sendResponse({ok:true, db, entitlements: feature.entitlements});
+      }
+      if(msg.type === 'OP_SET_AUTH_CERT'){
+        const db = await getDB();
+        const payload = msg.payload || msg;
+        const cert = payload.cert || payload.certificate;
+        const verify = await verifyCertificateSignature(cert);
+        if(!verify.ok) return sendResponse({ok:false, error: verify.error || 'CERT_VERIFY_FAILED'});
+        const auth = buildAuthFromCertificate(cert);
+        if(!auth) return sendResponse({ok:false, error:'INVALID_CERT'});
+        if(verify.bypassed){
+          auth.source = 'certificate_unsigned_dev';
+        }
+        db.auth = auth;
+        if(payload.licenseCode !== undefined){
+          db.licenseCode = String(payload.licenseCode || '').trim();
+        }
+        await setDB(db);
+        const feature = getFeatureStatus(db);
+        return sendResponse({ok:true, entitlements: feature.entitlements, auth: db.auth});
+      }
+      if(msg.type === 'OP_CLEAR_AUTH'){
+        const db = await getDB();
+        db.auth = normalizeAuthState(null);
+        db.licenseCode = '';
+        db.isPro = false;
+        await setDB(db);
+        return sendResponse({ok:true});
+      }
+      if(msg.type === 'OP_GET_AUTH'){
+        const db = await getDB();
+        const feature = getFeatureStatus(db);
+        return sendResponse({ok:true, auth: normalizeAuthState(db.auth), entitlements: feature.entitlements, source: feature.source});
       }
 
       if(msg.type === 'OP_DELETE_WORDS'){
@@ -761,12 +1109,18 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
       if(msg.type === 'OP_SET_WORD_NOTE'){
         const db = await getDB();
+        const feature = getFeatureStatus(db);
         const payload = msg.payload || msg;
         const word = String(payload.word||'').trim().toLowerCase();
         if(!word) return sendResponse({ok:false, error:'empty_word'});
         const noteRaw = payload.note ?? '';
         const note = String(noteRaw).trim();
         db.vocabNotes = db.vocabNotes || {};
+        const hadNote = !!String(db.vocabNotes[word] || '').trim();
+        if(note && !hadNote){
+          const room = canAddNotes(db, feature.entitlements, 1);
+          if(!room.ok) return sendResponse({ok:false, error:`NOTE_LIMIT_${room.limit}`});
+        }
         if(note){
           db.vocabNotes[word] = note;
         }else{
@@ -840,6 +1194,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         const id = Number(p.id || p.createdAt || p.sentenceId);
         if(!Number.isFinite(id)) return sendResponse({ok:false, error:'bad_id'});
         const db = await getDB();
+        const feature = getFeatureStatus(db);
         const arr = db.collectedSentences || [];
         const item = arr.find(s=>Number(s.createdAt||s.id) === id);
         if(!item) return sendResponse({ok:false, error:'not_found'});
@@ -857,6 +1212,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         }
         if(p.note !== undefined){
           const n = String(p.note||'').trim();
+          const hadNote = !!String(item.note || '').trim();
+          if(n && !hadNote){
+            const room = canAddNotes(db, feature.entitlements, 1);
+            if(!room.ok) return sendResponse({ok:false, error:`NOTE_LIMIT_${room.limit}`});
+          }
           item.note = n; // allow clearing
         }
         await setDB(db);
@@ -868,7 +1228,21 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         const words = payload.words || [];
         const sentences = payload.sentences || [];
         const db = await getDB();
+        const feature = getFeatureStatus(db);
+        const entitlements = feature.entitlements;
+        if(!entitlements.import_export){
+          return sendResponse({ok:false, error:'FEATURE_LOCKED_IMPORT_EXPORT'});
+        }
         normalizeVocabKeys(db);
+        const wordLimit = getWordLimit(entitlements);
+        const noteLimit = getNoteLimit(entitlements);
+        let noteCount = countAllNotes(db);
+        const stats = {
+          imported_words: 0,
+          imported_sentences: 0,
+          skipped_words_limit: 0,
+          skipped_notes_limit: 0,
+        };
         // words
         db.vocabList = db.vocabList || [];
         db.vocabDict = db.vocabDict || {};
@@ -882,14 +1256,32 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         for(const w of words){
           const word = String(w.word||'').trim().toLowerCase();
           if(!word) continue;
-          if(!listSet.has(word)){ db.vocabList.push(word); listSet.add(word); }
+          if(!listSet.has(word)){
+            if(!isUnlimited(wordLimit) && db.vocabList.length >= wordLimit){
+              stats.skipped_words_limit += 1;
+              continue;
+            }
+            db.vocabList.push(word);
+            listSet.add(word);
+            stats.imported_words += 1;
+          }
           if(w.meaning!=null){
             const m = String(w.meaning||'').trim();
             if(m) db.vocabDict[word] = m; // avoid overwriting existing meaning with blank
           }
           if(w.note!=null){
             const n = String(w.note||'').trim();
-            if(n) db.vocabNotes[word] = n; // avoid overwriting existing note with blank
+            const hasNote = !!String(db.vocabNotes[word] || '').trim();
+            if(n && !hasNote){
+              if(!isUnlimited(noteLimit) && noteCount >= noteLimit){
+                stats.skipped_notes_limit += 1;
+              }else{
+                db.vocabNotes[word] = n; // avoid overwriting existing note with blank
+                noteCount += 1;
+              }
+            }else if(n){
+              db.vocabNotes[word] = n;
+            }
           }
           db.vocabMeta[word] = Object.assign(db.vocabMeta[word]||{}, {
             status: (w.status||db.vocabMeta[word]?.status||'').toLowerCase() || 'red',
@@ -925,7 +1317,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           const ex = existingSentText.get(key);
           if(ex){
             if(!ex.translation && t) ex.translation = t;
-            if(!ex.note && s.note) ex.note = s.note;
+            if(!ex.note && s.note){
+              if(!isUnlimited(noteLimit) && noteCount >= noteLimit){
+                stats.skipped_notes_limit += 1;
+              }else{
+                ex.note = s.note;
+                noteCount += 1;
+              }
+            }
             if(!ex.url && s.url) ex.url = s.url;
             if(!ex.title && s.title) ex.title = s.title;
             if(!ex.sourceLabel && s.sourceLabel) ex.sourceLabel = s.sourceLabel;
@@ -935,40 +1334,61 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
           const item = {
             text,
             translation: t,
-            note: String(s.note||'').trim(),
+            note: '',
             url: String(s.url||'').trim(),
             title: String(s.title||'').trim(),
             sourceLabel: String(s.sourceLabel||'').trim(),
             createdAt: id
           };
+          const nextNote = String(s.note||'').trim();
+          if(nextNote){
+            if(!isUnlimited(noteLimit) && noteCount >= noteLimit){
+              stats.skipped_notes_limit += 1;
+            }else{
+              item.note = nextNote;
+              noteCount += 1;
+            }
+          }
           db.collectedSentences.push(item);
           existingSentIds.add(id);
           existingSentText.set(key, item);
+          stats.imported_sentences += 1;
         }
         await setDB(db);
-        return sendResponse({ok:true});
+        return sendResponse({ok:true, stats});
       }
       if(msg.type === 'OP_SET_REVIEW_CONFIG'){
         const cfg = msg.payload || msg;
         const db = await getDB();
+        const feature = getFeatureStatus(db);
         db.config = db.config || {};
-        const display = (cfg.display && typeof cfg.display === 'object') ? {
+        let display = (cfg.display && typeof cfg.display === 'object') ? {
           cn: cfg.display.cn !== false,
           en: cfg.display.en === true,
           note: cfg.display.note === true
         } : null;
-        const displayMode =
+        let displayMode =
           display ? (display.note ? 'note' : display.en ? 'en' : 'cn') :
           (cfg.displayMode || db.config.reviewConfig?.displayMode || 'cn');
+        let limit = Number(cfg.limit) || 20;
+        let includeRed = cfg.includeRed !== false;
+        let includeYellow = cfg.includeYellow !== false;
+        if(feature.entitlements.review_mode !== 'advanced'){
+          limit = 20;
+          includeRed = true;
+          includeYellow = true;
+          display = {cn:true, en:false, note:false};
+          displayMode = 'cn';
+        }
         db.config.reviewConfig = {
-          limit: Number(cfg.limit) || 20,
-          includeRed: cfg.includeRed !== false,
-          includeYellow: cfg.includeYellow !== false,
+          limit,
+          includeRed,
+          includeYellow,
           displayMode,
           display: display || db.config.reviewConfig?.display || {cn:true,en:false,note:false}
         };
         await setDB(db);
-        return sendResponse({ok:true});
+        return sendResponse({ok:true, downgraded: feature.entitlements.review_mode !== 'advanced'});
       }
 
       if(msg.type === 'OP_RATE_WORD'){

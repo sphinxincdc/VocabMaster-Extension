@@ -73,11 +73,215 @@ html.test-body body{
 
 /* test-ui */
 .test-body, .test-body body{height:100%;}
-.test-window{width:min(1100px, calc(100vw - 80px)); height:min(720px, calc(100vh - 80px)); margin:40px auto; background:#fff; border-radius:22px; box-shadow:0 30px 80px rgba(0,0,0,.18); overflow:hidden; display:flex; flex-direction:column;}
+.test-window{width:min(1100px, calc(100vw - 80px)); height:min(720px, calc(100vh - 80px)); margin:40px auto; background:#fff; border-radius:22px; box-shadow:0 30px 80px rgba(0,0,0,.18); overflow:hidden; display:flex; flex-direction:column; position:relative;}
 .test-card-face{position:absolute; inset:0; background:#fff; border-radius:22px; box-shadow:0 12px 35px rgba(0,0,0,.08); display:flex; flex-direction:column; align-items:center; justify-content:center; padding:46px 60px; backface-visibility:hidden;}
 .primary-btn:active{transform:scale(.98)}
 .test-rate-btn:active{transform:scale(.98)}
-.test-rate-btn{box-shadow:0 10px 24px rgba(0,0,0,.12)}
+.test-rate-btn{box-shadow:0 10px 24px rgba(0,0,0,.12);transition:filter .18s ease, opacity .18s ease, box-shadow .18s ease, transform .18s ease}
+.test-rate-btn.is-last{box-shadow:0 0 0 3px rgba(79,70,229,.30), 0 14px 26px rgba(0,0,0,.22); transform:translateY(-1px)}
+#test-status-bar{
+  margin:8px 30px 10px;
+  min-height:38px;
+  padding:0 14px;
+  border:1px solid rgba(79,70,229,.18);
+  border-radius:10px;
+  background:#eef2ff;
+  line-height:1.35;
+  transition:background .18s ease, border-color .18s ease;
+}
+#test-status-bar > div{
+  display:grid !important;
+  grid-template-columns:minmax(0, 1fr) 320px;
+  align-items:center;
+  min-height:38px;
+  gap:10px;
+}
+#test-status-text{font-size:12px;font-weight:800;color:#243166}
+#test-status-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#test-hotkeys-inline{font-size:12px;color:#5f6890;white-space:nowrap;text-align:right;justify-self:end}
+#test-status-bar.is-pending-flip{
+  background:#e9f1ff;
+  border-color:#b8caff;
+}
+#test-status-bar.is-pending-flip #test-status-text::before{
+  content:"🔒 ";
+}
+#test-srs-controls.is-disabled{opacity:1}
+#test-srs-controls.is-disabled .test-rate-btn{
+  cursor:not-allowed;
+  opacity:.72;
+  filter:saturate(.42) contrast(.95) brightness(1.03);
+  box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+#test-config-summary{min-height:38px}
+#cfg-summary-text{line-height:1.4}
+#test-empty-overlay h2{font-weight:900}
+#test-empty-overlay button:active{transform:scale(.98)}
+
+/* Test page dark-mode overrides (fix inline light colors) */
+html.test-body.vb-dark body,
+html.test-body body.vb-force-dark{
+  background:
+    radial-gradient(1200px 800px at 10% 8%, rgba(59,130,246,.16), transparent 58%),
+    radial-gradient(900px 600px at 90% 10%, rgba(124,58,237,.22), transparent 60%),
+    linear-gradient(180deg, #09061a 0%, #0b0720 100%) !important;
+}
+html.test-body.vb-dark .test-window,
+html.test-body body.vb-force-dark .test-window{
+  background: rgba(26,20,48,.96) !important;
+  border: 1px solid var(--vb-border) !important;
+  box-shadow: 0 20px 55px rgba(0,0,0,.5) !important;
+  color: var(--vb-text) !important;
+}
+html.test-body.vb-dark .test-header,
+html.test-body.vb-dark .test-config,
+html.test-body.vb-dark #test-srs-controls,
+html.test-body body.vb-force-dark .test-header,
+html.test-body body.vb-force-dark .test-config,
+html.test-body body.vb-force-dark #test-srs-controls{
+  border-color: var(--vb-border) !important;
+}
+html.test-body.vb-dark .test-header,
+html.test-body body.vb-force-dark .test-header{
+  background: rgba(20,15,40,.96) !important;
+}
+html.test-body.vb-dark .test-header > div[style*="height:8px"],
+html.test-body body.vb-force-dark .test-header > div[style*="height:8px"]{
+  background: rgba(167,139,250,.18) !important;
+}
+html.test-body.vb-dark #test-idx,
+html.test-body body.vb-force-dark #test-idx{
+  color: var(--vb-muted) !important;
+}
+html.test-body.vb-dark #test-close,
+html.test-body body.vb-force-dark #test-close{
+  color: #fca5a5 !important;
+}
+html.test-body.vb-dark .test-config > div > span,
+html.test-body body.vb-force-dark .test-config > div > span{
+  color: var(--vb-muted) !important;
+}
+html.test-body.vb-dark .test-config label,
+html.test-body body.vb-force-dark .test-config label{
+  background: rgba(167,139,250,.12) !important;
+  border-color: var(--vb-border) !important;
+}
+html.test-body.vb-dark .test-config label span,
+html.test-body body.vb-force-dark .test-config label span{
+  color: var(--vb-text) !important;
+}
+html.test-body.vb-dark #cfg-limit,
+html.test-body body.vb-force-dark #cfg-limit{
+  background: rgba(15,23,42,.42) !important;
+  border-color: var(--vb-border) !important;
+  color: var(--vb-text) !important;
+}
+html.test-body.vb-dark #cfg-limit::placeholder,
+html.test-body body.vb-force-dark #cfg-limit::placeholder{
+  color: rgba(237,233,254,.55) !important;
+}
+html.test-body.vb-dark #test-config-summary,
+html.test-body body.vb-force-dark #test-config-summary{
+  color: var(--vb-text) !important;
+}
+html.test-body.vb-dark #cfg-summary-text,
+html.test-body body.vb-force-dark #cfg-summary-text{
+  color: var(--vb-muted) !important;
+}
+html.test-body.vb-dark #cfg-edit,
+html.test-body.vb-dark #test-empty-back,
+html.test-body.vb-dark #test-status-bar,
+html.test-body body.vb-force-dark #cfg-edit,
+html.test-body body.vb-force-dark #test-empty-back,
+html.test-body body.vb-force-dark #test-status-bar{
+  background: rgba(167,139,250,.14) !important;
+  border-color: var(--vb-border) !important;
+  color: var(--vb-text) !important;
+}
+html.test-body.vb-dark #test-status-bar.is-pending-flip,
+html.test-body body.vb-force-dark #test-status-bar.is-pending-flip{
+  background: rgba(99,102,241,.26) !important;
+  border-color: rgba(167,139,250,.62) !important;
+}
+html.test-body.vb-dark #test-status-text,
+html.test-body.vb-dark #test-hotkeys-inline,
+html.test-body body.vb-force-dark #test-status-text,
+html.test-body body.vb-force-dark #test-hotkeys-inline{
+  color: var(--vb-text) !important;
+}
+html.test-body.vb-dark .test-card-face,
+html.test-body body.vb-force-dark .test-card-face{
+  background: rgba(12,18,44,.84) !important;
+  border: 1px solid var(--vb-border) !important;
+  box-shadow: 0 12px 30px rgba(0,0,0,.42) !important;
+}
+html.test-body.vb-dark #test-cloze-container,
+html.test-body body.vb-force-dark #test-cloze-container{
+  color: var(--vb-muted) !important;
+}
+html.test-body.vb-dark #test-q-word,
+html.test-body.vb-dark #test-ans-word,
+html.test-body body.vb-force-dark #test-q-word,
+html.test-body body.vb-force-dark #test-ans-word{
+  color: var(--vb-text) !important;
+}
+html.test-body.vb-dark #test-ans-def,
+html.test-body.vb-dark #test-ans-def div,
+html.test-body body.vb-force-dark #test-ans-def,
+html.test-body body.vb-force-dark #test-ans-def div{
+  color: var(--vb-text) !important;
+}
+html.test-body.vb-dark .test-card-face[style*="rotateY"] > div[style*="height:1px"],
+html.test-body body.vb-force-dark .test-card-face[style*="rotateY"] > div[style*="height:1px"]{
+  background: var(--vb-border) !important;
+}
+html.test-body.vb-dark .test-card-face p,
+html.test-body body.vb-force-dark .test-card-face p{
+  color: var(--vb-muted) !important;
+}
+html.test-body.vb-dark #test-srs-controls,
+html.test-body body.vb-force-dark #test-srs-controls{
+  background: rgba(20,15,40,.96) !important;
+}
+html.test-body.vb-dark #test-finish-overlay,
+html.test-body body.vb-force-dark #test-finish-overlay{
+  background: rgba(12,10,30,.98) !important;
+}
+html.test-body.vb-dark #test-empty-overlay,
+html.test-body body.vb-force-dark #test-empty-overlay{
+  background: rgba(12,10,30,.98) !important;
+}
+html.test-body.vb-dark #test-finish-overlay h2,
+html.test-body.vb-dark #test-finish-overlay #test-encourage,
+html.test-body body.vb-force-dark #test-finish-overlay h2,
+html.test-body body.vb-force-dark #test-finish-overlay #test-encourage{
+  color: var(--vb-text) !important;
+}
+html.test-body.vb-dark #test-empty-overlay h2,
+html.test-body.vb-dark #test-empty-overlay #test-empty-desc,
+html.test-body body.vb-force-dark #test-empty-overlay h2,
+html.test-body body.vb-force-dark #test-empty-overlay #test-empty-desc{
+  color: var(--vb-text) !important;
+}
+html.test-body.vb-dark #test-finish-overlay #test-summary,
+html.test-body body.vb-force-dark #test-finish-overlay #test-summary{
+  color: var(--vb-muted) !important;
+}
+html.test-body.vb-dark #test-report,
+html.test-body body.vb-force-dark #test-report{
+  background: rgba(19,15,38,.9) !important;
+  border-color: var(--vb-border) !important;
+}
+html.test-body.vb-dark #test-report-mode,
+html.test-body.vb-dark #test-report-weak,
+html.test-body.vb-dark #test-report-next,
+html.test-body.vb-dark #test-report-time,
+html.test-body body.vb-force-dark #test-report-mode,
+html.test-body body.vb-force-dark #test-report-weak,
+html.test-body body.vb-force-dark #test-report-next,
+html.test-body body.vb-force-dark #test-report-time{
+  color: var(--vb-text) !important;
+}
 
 
 /* fix40: Manager header spacing */
@@ -283,7 +487,12 @@ html.test-body body{
 }
 
 .sentence-actions{
-  flex:0 0 72px;
+  flex:0 0 108px;
+  width:108px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  align-items:flex-end;
 }
 
 #wordsWrap, #sentWrap{overflow:visible;}

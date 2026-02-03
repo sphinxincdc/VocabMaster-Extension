@@ -54,6 +54,31 @@ function setOut(text){
   $('out').textContent = text || '';
 }
 
+function isSystemDark(){
+  try{ return !!window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches; }catch(_){ return false; }
+}
+
+function resolveThemeMode(db){
+  if(db && (db.themeMode === 'auto' || db.themeMode === 'light' || db.themeMode === 'dark')) return db.themeMode;
+  const autoMode = db?.theme_auto_mode !== false;
+  const manualDark = db?.theme_dark_mode != null ? !!db.theme_dark_mode : !!db?.popup_force_dark;
+  if(autoMode) return 'auto';
+  return manualDark ? 'dark' : 'light';
+}
+
+function getEffectiveDark(themeMode){
+  return themeMode === 'dark' || (themeMode === 'auto' && isSystemDark());
+}
+
+function applyPopupTheme(isDark){
+  const dark = !!isDark;
+  document.documentElement.classList.toggle('vb-dark', dark);
+  document.documentElement.classList.toggle('vb-light', !dark);
+  document.body.classList.toggle('vb-force-dark', dark);
+  document.body.classList.toggle('vb-force-light', !dark);
+}
+
+
 function isLikelyWord(text){
   // single token (allow apostrophe, hyphen)
   const t = norm(text);
@@ -96,12 +121,9 @@ async function addWordOrSentence(text, translation){
 }
 
 (async function init(){
-  try{
-    const m = chrome.runtime.getManifest();
-    $('ver').textContent = 'Version ' + m.version;
-  }catch(e){}
 
   $('openManager').addEventListener('click', ()=>openPage('manager.html'));
+  $('openQuotes').addEventListener('click', ()=>openPage('manager.html?tab=sentences'));
   $('openReview').addEventListener('click', ()=>openPage('test.html'));
   $('openOptions').addEventListener('click', ()=>openPage('options.html'));
 
@@ -109,63 +131,160 @@ async function addWordOrSentence(text, translation){
   activeUrl = tab && tab.url ? tab.url : '';
   activeTitle = tab && tab.title ? tab.title : '';
   const url = activeUrl;
-  const title = activeTitle;
   const dKey = (domainKey(url)||'').toLowerCase();
   const pKey = (pageKey(url)||'').toLowerCase();
-  $('domainLabel').textContent = dKey || '当前域名';
-  $('pageLabel').textContent = pKey ? (pKey.length>44 ? pKey.slice(0,44)+'…' : pKey) : '当前页';
 
-  const db = await getDB(['blacklist_domain','blacklist_page','global_disable']);
+  const db = await getDB(['blacklist_domain','blacklist_page','global_disable','popup_force_dark','theme_auto_mode','theme_dark_mode','themeMode']);
   const blDomain = Array.isArray(db.blacklist_domain) ? db.blacklist_domain.map(x=>String(x||'').toLowerCase()) : [];
   const blPage = Array.isArray(db.blacklist_page) ? db.blacklist_page.map(x=>String(x||'').toLowerCase()) : [];
   const gOff = !!db.global_disable;
+  let themeModeCurrent = resolveThemeMode(db);
 
-  // IMPORTANT: switches represent "disabled"
-  $('swGlobal').checked = gOff;
-  $('swDomain').checked = dKey ? blDomain.includes(dKey) : false;
-  $('swPage').checked = pKey ? blPage.includes(pKey) : false;
+  let blockMode = 'off';
+  if(gOff) blockMode = 'global';
+  else if(pKey && blPage.includes(pKey)) blockMode = 'page';
+  else if(dKey && blDomain.includes(dKey)) blockMode = 'domain';
+
+  applyPopupTheme(getEffectiveDark(themeModeCurrent));
+
+  function getThemeModeLabel(mode){
+    if(mode === 'dark') return '始终深色';
+    if(mode === 'light') return '始终浅色';
+    return '跟随系统';
+  }
+
+  function getThemeModeHint(mode){
+    if(mode === 'dark') return '当前：始终深色（不跟随系统）';
+    if(mode === 'light') return '当前：始终浅色（不跟随系统）';
+    return '当前：跟随系统';
+  }
+
+  function getNextThemeMode(mode){
+    const modes = ['auto', 'dark', 'light'];
+    const i = modes.indexOf(mode);
+    return modes[(i + 1) % modes.length];
+  }
+
+  function getBlockModeLabel(mode){
+    if(mode === 'page') return '本页停用';
+    if(mode === 'domain') return '本域名停用';
+    if(mode === 'global') return '全部停用';
+    return '正常运行';
+  }
+
+  function getBlockModeHint(mode){
+    if(mode === 'page') return `当前页已停用：${pKey ? (pKey.length > 38 ? pKey.slice(0, 38) + '…' : pKey) : '此页'}`;
+    if(mode === 'domain') return `当前域名已停用：${dKey || '此域名'}`;
+    if(mode === 'global') return '全部网页已停用（点击右侧切换）';
+    return '正常运行（点击右侧切换：此页/域名/全部）';
+  }
+
+  function getNextBlockMode(mode){
+    const modes = ['off'];
+    if(pKey) modes.push('page');
+    if(dKey) modes.push('domain');
+    modes.push('global');
+    const i = modes.indexOf(mode);
+    return modes[(i + 1) % modes.length];
+  }
 
   function paintToggleRows(){
     const setOn = (rowId, on)=>{ const el = $(rowId); if(el) el.dataset.on = on ? '1' : '0'; };
-    setOn('rowGlobal', $('swGlobal').checked);
-    setOn('rowDomain', $('swDomain').checked);
-    setOn('rowPage', $('swPage').checked);
+    if($('rowThemeMode')) setOn('rowThemeMode', themeModeCurrent === 'dark');
+    if($('btnThemeMode')){
+      $('btnThemeMode').dataset.mode = themeModeCurrent;
+      $('btnThemeMode').textContent = getThemeModeLabel(themeModeCurrent);
+    }
+    if($('themeModeHint')){
+      const hint = getThemeModeHint(themeModeCurrent);
+      $('themeModeHint').textContent = hint;
+      $('themeModeHint').title = hint;
+    }
+    setOn('rowBlockMode', blockMode !== 'off');
+    if($('btnBlockMode')){
+      $('btnBlockMode').dataset.mode = blockMode;
+      $('btnBlockMode').textContent = getBlockModeLabel(blockMode);
+    }
+    if($('blockModeHint')){
+      const hint = getBlockModeHint(blockMode);
+      $('blockModeHint').textContent = hint;
+      $('blockModeHint').title = hint;
+    }
   }
   paintToggleRows();
 
   async function syncSwitches(){
-    const nextGlobal = $('swGlobal').checked;
-    const nextDomainOff = $('swDomain').checked;
-    const nextPageOff = $('swPage').checked;
-
     let nextBlDomain = blDomain.slice();
     let nextBlPage = blPage.slice();
+    const nextGlobal = blockMode === 'global';
 
-    if(dKey){
-      if(nextDomainOff && !nextBlDomain.includes(dKey)) nextBlDomain.push(dKey);
-      if(!nextDomainOff) nextBlDomain = nextBlDomain.filter(x=>x!==dKey);
-    }
-    if(pKey){
-      if(nextPageOff && !nextBlPage.includes(pKey)) nextBlPage.push(pKey);
-      if(!nextPageOff) nextBlPage = nextBlPage.filter(x=>x!==pKey);
-    }
+    if(dKey) nextBlDomain = nextBlDomain.filter(x=>x!==dKey);
+    if(pKey) nextBlPage = nextBlPage.filter(x=>x!==pKey);
 
+    if(blockMode === 'domain' && dKey && !nextBlDomain.includes(dKey)) nextBlDomain.push(dKey);
+    if(blockMode === 'page' && pKey && !nextBlPage.includes(pKey)) nextBlPage.push(pKey);
+
+    const nextThemeMode = themeModeCurrent;
+    const nextAutoMode = nextThemeMode === 'auto';
+    const nextManualDark = nextThemeMode === 'dark';
     await setDB({
       global_disable: nextGlobal,
       blacklist_domain: uniq(nextBlDomain),
-      blacklist_page: uniq(nextBlPage)
+      blacklist_page: uniq(nextBlPage),
+      popup_force_dark: nextManualDark,
+      theme_auto_mode: nextAutoMode,
+      theme_dark_mode: nextManualDark,
+      themeMode: nextThemeMode
     });
+    try{ chrome.runtime.sendMessage({type:'THEME_UPDATED', themeMode: nextThemeMode}); }catch(_){/* ignore */}
 
     // Update local mirrors so additional toggles are consistent
     blDomain.length = 0; blDomain.push(...uniq(nextBlDomain));
     blPage.length = 0; blPage.push(...uniq(nextBlPage));
 
+    applyPopupTheme(getEffectiveDark(nextThemeMode));
     paintToggleRows();
   }
 
-  $('swGlobal').addEventListener('change', syncSwitches);
-  $('swDomain').addEventListener('change', syncSwitches);
-  $('swPage').addEventListener('change', syncSwitches);
+  if($('btnThemeMode')) $('btnThemeMode').addEventListener('click', async ()=>{
+    themeModeCurrent = getNextThemeMode(themeModeCurrent);
+    await syncSwitches();
+  });
+  if($('btnBlockMode')) $('btnBlockMode').addEventListener('click', async ()=>{
+    const nextMode = getNextBlockMode(blockMode);
+    if(nextMode === 'global'){
+      const ok = window.confirm('将完全关闭插件（所有网页停用），确定继续吗？');
+      if(!ok) return;
+    }
+    blockMode = nextMode;
+    await syncSwitches();
+  });
+  try{
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onThemeChange = ()=>{
+      applyPopupTheme(getEffectiveDark(themeModeCurrent));
+    };
+    if (mq.addEventListener) mq.addEventListener('change', onThemeChange);
+    else if (mq.addListener) mq.addListener(onThemeChange);
+  }catch(_){/* ignore */}
+  async function syncThemeModeFromStorage(){
+    const themeDb = await getDB(['themeMode','theme_auto_mode','theme_dark_mode','popup_force_dark']);
+    themeModeCurrent = resolveThemeMode(themeDb);
+    applyPopupTheme(getEffectiveDark(themeModeCurrent));
+    paintToggleRows();
+  }
+  try{
+    chrome.storage.onChanged.addListener((changes, area)=>{
+      if(area !== 'local') return;
+      if(!changes.themeMode && !changes.theme_auto_mode && !changes.theme_dark_mode && !changes.popup_force_dark) return;
+      syncThemeModeFromStorage();
+    });
+    chrome.runtime.onMessage.addListener((msg)=>{
+      if(msg && msg.type === 'THEME_UPDATED'){
+        syncThemeModeFromStorage();
+      }
+    });
+  }catch(_){/* ignore */}
 
   async function runTranslate(){
     setError('');

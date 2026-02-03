@@ -1,3 +1,201 @@
+## 2.53.69 (2026-02-03)
+- Tweak: 复习会话改为“仅提示不加题”模式：低分与错题仅给补充复习建议，不再自动把题量从设定值（如 20）扩展到更多。
+- Scope: `test.js`, `manifest.json`, `CHANGELOG.md`.
+
+## 2.53.68 (2026-02-03)
+- Tweak: 去除评分按钮禁用态上的斜纹遮罩，仅保留低饱和/低对比与弱阴影，视觉更干净。
+- Tweak: 强化“待翻面”状态条提示：新增左侧锁图标与更浅蓝底（夜间也同步增强），与按钮禁用语义保持一致。
+- Scope: `test.js`, `styles.css`, `manifest.json`, `CHANGELOG.md`.
+
+## 2.53.67 (2026-02-03)
+- Tweak: 优化复习页评分按钮禁用态视觉（未翻面时）：降低饱和度与对比、弱化阴影，并增加轻微斜纹遮罩，强化“当前不可评分”识别度。
+- Scope: `styles.css`, `manifest.json`, `CHANGELOG.md`.
+
+## 2.53.66 (2026-02-03)
+- Tweak: 消除复习页“横条横跳”与底部抖动：评分区改为固定占位，按钮始终可见（未翻面时禁用态），不再因翻面触发布局重排。
+- Tweak: 状态工具栏改为固定双列网格（左状态/右快捷键），统一宽度并启用溢出省略，避免文案长度变化导致重心漂移。
+- Tweak: 状态切换仅做文案与可用态变化（不再显示/隐藏整块），整体交互节奏更稳定。
+- Scope: `test.js`, `test.html`, `styles.css`, `manifest.json`, `CHANGELOG.md`.
+
+## 2.53.65 (2026-02-03)
+- Tweak: 重构复习页底部提示为“评分工具栏”样式（非悬浮横条）：移入评分区头部、降低视觉重量、与评分按钮形成同一交互区。
+- Tweak: 工具栏状态改为双态文案（待翻面 / 待评分），并在右侧同步展示对应快捷键提示（翻面后不再强调 Space）。
+- Scope: `test.html`, `test.js`, `styles.css`, `manifest.json`, `CHANGELOG.md`.
+
+## 2.53.64 (2026-02-03)
+- Tweak: 复习页顶部“结束复习”按钮改为直接跳转回单词本（`manager.html`），不再关闭窗口。
+- Scope: `test.js`, `manifest.json`, `CHANGELOG.md`.
+
+## 2.53.63 (2026-02-03)
+- Revert: 撤回“进入复习页默认折叠配置区”的改动；恢复为首次进入默认展开配置项（应用后仍保持摘要折叠态）。
+- Scope: `test.js`, `manifest.json`, `CHANGELOG.md`.
+
+## 2.53.62 (2026-02-03)
+- Tweak: 复习页状态条文案按卡片状态动态切换：未翻面提示 `Space`，翻面后提示直接评分 `1/2/3`，避免语义冲突。
+- Tweak: 复习页默认进入“配置摘要折叠态”，做题更聚焦，可通过“修改设置”展开。
+- Tweak: 新增评分按钮“最近一次选择”短暂高亮反馈（约 600ms），强化操作确认感。
+- Scope: `test.js`, `styles.css`, `manifest.json`, `CHANGELOG.md`.
+
+## 2.53.61 (2026-02-03)
+- Tweak: 合并复习页底部“评分反馈条 + 快捷键提示”为统一状态条，改为更稳的实底卡片样式，避免透明叠层冲突与视觉噪音。
+- Tweak: 快捷键提示改为仅在未翻面时显示，翻面后自动隐藏，减少干扰。
+- Fix: 复习页取消对“英文释义/批注”开关的专业版强制锁定，恢复可手动切换。
+- Scope: `test.html`, `test.js`, `styles.css`, `manifest.json`, `CHANGELOG.md`.
+
+## 2.53.60 (2026-02-03)
+- Feature: 复习会话新增自适应结束策略：连续高分可提前结束，低分累计会自动补充巩固词，避免“机械刷完固定题量”。
+- Feature: 新增错题二次出现机制：本轮首次评分为 `0/3` 的词会在会话尾部自动再刷一轮。
+- Feature: 新增答后即时反馈条，显示“下次复习时间 + 掌握度变化 + 易错词状态”。
+- Feature: 结束页新增会话复盘（最弱 Top5、建议下轮模式、预计下轮用时 + 本轮用时）。
+- Scope: `test.js`, `test.html`, `styles.css`, `manifest.json`, `CHANGELOG.md`.
+
+## 2.53.59 (2026-02-03)
+- Tweak: 复习页键盘评分改为“先翻面再确认”流程：未翻面时按 `1/2/3` 仅翻到答案面，不立即计分；再次按 `1/2/3` 才按确认键计分。
+- Scope: `test.js`, `manifest.json`, `CHANGELOG.md`.
+
+## 2.53.58 (2026-02-03)
+- Tweak: 艾宾浩斯复习页放宽键盘评分限制，未翻面（未显示释义）时也可直接按 `1/2/3` 评分，提升纯键盘刷题效率。
+- Scope: `test.js`, `manifest.json`, `CHANGELOG.md`.
+
+## 2.53.57 (2026-02-03)
+- Tweak: 艾宾浩斯复习页新增“悬浮快捷键提示条”（`Space / 1 / 2 / 3`），位于评分区上方，便于键盘刷题。
+- Tweak: 配置摘要新增“本次入口模式”展示（如英语仓库/易错词/陌生词等），便于确认当前复习来源。
+- Scope: `test.html`, `test.js`, `styles.css`, `manifest.json`.
+
+## 2.53.56 (2026-02-03)
+- Fix: 修复艾宾浩斯复习页在夜间深色模式下出现大面积白底的问题（复习窗口、配置区、卡片面、结束页统一深紫暗色）。
+- Fix: 为复习页补齐与 popup/manager/options 一致的主题同步逻辑（storage 变更、`THEME_UPDATED` 消息、系统深色监听）。
+- Scope: `test.js`, `styles.css`, `manifest.json`.
+
+## 2.53.55 (2026-02-03)
+- Fix: 修复 BYOK 页面输入框在带“显示/隐藏”按钮时的横向溢出问题（统一 box-sizing，限制卡片与输入容器宽度，避免“长条穿出卡片”）。
+- Tweak: 优化 popup 顶部品牌区密度与对齐（标题更紧凑、设置按钮缩小、间距下调），缓解“拥挤/偏右”观感。
+- Scope: `options.html`, `popup.html`, `manifest.json`.
+
+## 2.53.54 (2026-02-03)
+- Fix: 首轮修复 BYOK 输入行与眼睛按钮在部分分辨率下的布局溢出，补充 inputWrap/card/grid 的最小宽度与溢出保护。
+- Tweak: popup 标题区缩小设置按钮并收紧间距，提升标题可读性。
+- Scope: `options.html`, `popup.html`, `manifest.json`.
+
+## 2.53.53 (2026-02-03)
+- Fix: 修复管理页夜间模式下单词/金句卡片释义对比度问题（避免浅色文字落在浅背景导致看不清）。
+- Fix: 清理 manager 工具栏样式中的转义换行残留，恢复 CSS 规则稳定解析。
+- Scope: `manager.html`, `manifest.json`.
+
+## 2.53.52 (2026-02-03)
+- Files: manifest.json, CHANGELOG.md, popup.html, popup.js, options.html, options.js, manager.html, manager.js, content.js
+- Change: 统一主题切换为单一 `themeMode`（auto/light/dark）并保持旧键兼容，popup/options/manager/content 全部即时响应主题更新；优化 popup 视觉密度（更紧凑输入区、设置按钮缩小、自动/手动夜间主从禁用态更明显），并强化“完全关闭插件”危险态（开启深红底白字、关闭红描边）；BYOK 页面收紧间距、测试按钮状态色统一、底部操作区 sticky、敏感 key 新增显示/隐藏切换。
+- Scope: UI/主题交互一致性增强，不改词库/复习/同步业务逻辑。
+- Risk: 主题切换跨页面联动依赖 storage/message 监听，若浏览器限制消息派发，页面仍会在重新打开后正确生效。
+
+## 2.53.51 (2026-02-03)
+- Files: manifest.json, theme.css, popup.html, popup.js, manager.html, manager.js, options.html, options.js, CHANGELOG.md
+- Change: 品牌名称统一改为“霍德英语学习管家”（manifest、popup、manager、options）；深色主题开关升级为“自动夜间深色模式 + 夜间深色模式”双逻辑（自动=跟随系统；关闭自动后可手动强制夜间）；手动夜间与系统自动夜间使用同一套深紫主题令牌，并同步应用到 popup、manager（单词本）、options（设置页）。
+- Scope: UI/主题与文案同步，不改词库/复习等业务逻辑。
+- Risk: 若个别模块对 `popup_force_dark` 旧键有依赖，已保留兼容回退读取。
+
+## 2.53.50 (2026-02-03)
+- Files: popup.html, popup.js, manifest.json, CHANGELOG.md
+- Change: Added a manual dark-mode switch in popup menu (深色模式) so users can force deep-purple night UI during daytime; preference persisted in storage key `popup_force_dark`.
+- Risk: Popup-only UI toggle; no business/data logic impact.
+- Rollback: Restore listed files from 2.53.49 and bump manifest version.
+
+## 2.53.49 (2026-02-03)
+- Files: theme.css, popup.html, options.html, manager.html, manifest.json, CHANGELOG.md
+- Change: Unified deep-purple night mode for popup/options/manager (auto via system dark mode), matching content popup style tokens; no logic/data changes.
+- Risk: UI-only theme override; if any contrast issue appears on specific blocks, revert affected HTML style block and keep token layer.
+- Rollback: Restore listed files from 2.53.48 and bump manifest version.
+
+## 2.53.48 (2026-02-03)
+- Files changed: content.js, manifest.json, CHANGELOG.md
+- Change: Added a deep-purple night mode for the in-page word popup (content dialog), including dark token palette, dark cards/inputs/chips, and automatic theme switch via `prefers-color-scheme` or page `dark` class, without changing popup behavior logic.
+- Risk: Low; style-token/UI-only update inside content popup.
+- Rollback: Restore listed files from 2.53.47 and bump manifest version.
+
+## 2.53.47 (2026-02-03)
+- Files changed: manager.js, manifest.json, CHANGELOG.md
+- Change: Added a hidden DevTools debug hook `window.__vbDebugQuoteExport` for quote-card export self-testing (open modal by sentence id, render preview, export by id, list sentence ids), completing stage-3 minimal debug entry without changing business flow.
+- Risk: Low; debug-only global helper, no existing user-facing logic changed.
+- Rollback: Restore listed files from 2.53.46 and bump manifest version.
+
+## 2.53.46 (2026-02-03)
+- Files changed: manager.html, manager.js, styles.css, quote_card_export.js, manifest.json, CHANGELOG.md
+- Change: Added sentence-level “导出卡片” flow in manager with canvas PNG export modal (Light/Dark/Academic templates, 1:1 & 4:5 ratios, translation/source/watermark switches, preview, and localStorage persistence); added per-card export action and shared toast/error feedback; extracted export rendering into standalone `quote_card_export.js`; updated brand signature placement to `Own Your Words.` under `Personal English Asset System` and removed right-side gold artistic motto.
+- Risk: Medium-low; manager UI gained one new modal and one new per-item action, no existing word/review data logic changed.
+- Rollback: Restore listed files from 2.53.45 and bump manifest version.
+
+## 2.53.45 (2026-02-03)
+- Files changed: manager.html, popup.html, manifest.json, CHANGELOG.md
+- Change: Added visible right-side gold artistic header motto “OWN YOUR WORDS”; rebuilt manager search expansion as an absolute floating field to prevent toolbar overlap and misalignment, with responsive expand width (wide 360px / narrow 260px); further compacted popup layout spacing; compressed top six stat cards to remove extra bottom blank space.
+- Risk: Low; UI/CSS-only adjustments, no data or business-logic changes.
+- Rollback: Restore listed files from 2.53.44 and bump manifest version.
+
+## 2.53.44 (2026-02-03)
+- Files changed: manager.html, popup.html, manifest.json, CHANGELOG.md
+- Change: Added right-side gold artistic hero text “OWN YOUR WORDS”; fixed manager search expansion to responsive in-flow behavior (wide 360px / narrow 260px) to avoid overlap and toolbar misalignment; further tightened popup spacing for a denser layout; compressed top six stat cards again to remove extra bottom whitespace.
+- Risk: Low; UI-only changes.
+- Rollback: Restore listed files from 2.53.43 and bump manifest version.
+
+## 2.53.43 (2026-02-03)
+- Files changed: manager.html, popup.html, manifest.json, CHANGELOG.md
+- Change: Fixed manager search expansion overlap/misalignment by opening expanded search below the toolbar row with higher local z-index; compacted popup spacing (brand/header/cards/tool rows/system controls) for denser layout; darkened manager clear buttons to a deeper red for stronger visual hierarchy.
+- Risk: Low; UI/CSS-only adjustments.
+- Rollback: Restore listed files from 2.53.42 and bump manifest version.
+
+## 2.53.42 (2026-02-03)
+- Files changed: manager.html, manager.js, content.js, manifest.json, CHANGELOG.md
+- Change: Compacted the top six manager stat cards by reducing extra bottom whitespace/height; added Cmd/Ctrl+Enter quick-save for all note editors (word notes and sentence notes in manager, plus in-page word popup note editor).
+- Risk: Low; UI spacing tweak + keyboard shortcut only.
+- Rollback: Restore listed files from 2.53.41 and bump manifest version.
+
+## 2.53.41 (2026-02-03)
+- Files changed: manager.html, popup.html, manifest.json, CHANGELOG.md
+- Change: Removed emoji from manager toolbar import/export/refresh buttons; word-manager search now expands as a right-side floating input so toolbar layout does not shift; popup disable toggles now show red active state (row + switch track); popup brand text block and settings button are vertically aligned top/bottom.
+- Risk: Low; UI-only changes.
+- Rollback: Restore listed files from 2.53.40 and bump manifest version.
+
+## 2.53.40 (2026-02-03)
+- Files changed: manager.js, manager.html, manager.css, manifest.json, CHANGELOG.md
+- Change: Word status single-click now keeps the current list order (no immediate resort) until explicit refresh/re-enter/resort; top six stat cards are compacted with title/value left-aligned and card colors adjusted (英语仓库=浅青, 易错词=浅蓝); dashboard 8-card text contrast improved for readability.
+- Risk: Low; one sorting behavior change on manager list interaction plus UI-only style tuning.
+- Rollback: Restore listed files from 2.53.39 and bump manifest version.
+
+## 2.53.39 (2026-02-03)
+- Files changed: content.js, popup.html, options.html, manager.html, manifest.json, CHANGELOG.md
+- Change: Moved in-page note chip to between status buttons and definition sections; removed top divider lines above status row and footer jump links; reduced blank spacing between action row and Chinese definitions; aligned popup settings button with title row and changed subtitle to “OWN YOUR WORDS”; restored emoji labels across popup/options/manager/content UI text.
+- Risk: Low; UI text/style only, no functional logic changed.
+- Rollback: Restore listed files from 2.53.38 and bump manifest version.
+
+## 2.53.38 (2026-02-02)
+- Files changed: popup.html, options.html, content.js, manifest.json, CHANGELOG.md
+- Change: Reduced popup menu typography to prevent clipping; refactored BYOK options page into the same visual token system; restored in-page status-button active colors to deeper per-status tones (red/yellow/green/purple); resized clear-status button to match status button height; moved “更多引擎” to an inline pill button after Urban with expandable extra-engine panel; tightened top action-row vertical spacing in the in-page popup.
+- Risk: Low; UI-only changes, no storage or logic paths changed.
+- Rollback: Restore listed files from 2.53.37 and bump manifest version.
+
+## 2.53.37 (2026-02-02)
+- Files changed: theme.css, popup.html, manager.html, manager.css, content.js, manifest.json, CHANGELOG.md
+- Change: Visual-unification refactor (no logic changes): unified color/radius/shadow/typography rules across popup, manager, and in-page content popup; removed emoji icons; mapped buttons to Primary/Secondary/Danger and status chips to pill tags.
+- Risk: Low; styling/markup-only.
+- Rollback: Restore listed files from 2.53.36 and bump manifest version.
+
+## 2.53.36 (2026-02-02)
+- Files changed: content.js, manifest.json, CHANGELOG.md
+- Change: In-page popup footer shows only Baidu/Cambridge/Urban by default; remaining engines are moved under a collapsible “更多引擎” button.
+- Risk: Low; popup UI only.
+- Rollback: Restore listed files from 2.53.35 and bump manifest version.
+
+## 2.53.35 (2026-02-02)
+- Files changed: manager.html, manifest.json, CHANGELOG.md
+- Change: Stat cards align title/value; search input expands on focus (and stays expanded when non-empty) to avoid truncation.
+- Risk: Low; manager UI only.
+- Rollback: Restore listed files from 2.53.34 and bump manifest version.
+
+## 2.53.34 (2026-02-02)
+- Files changed: popup.html, popup.js, manifest.json, CHANGELOG.md
+- Change: Popup settings button enlarged and pinned top-right; removed popup version label; fixed long URL text squeezing the toggle switch.
+- Risk: Low; popup UI only.
+- Rollback: Restore listed files from 2.53.33 and bump manifest version.
+
 ## 2.53.33 (2026-01-31)
 - Files changed: popup.html, manifest.json, CHANGELOG.md
 - Change: Popup UI reorganized with top-right settings icon, brand subtitle, white-card tool entries, and a separate gray system-control area.

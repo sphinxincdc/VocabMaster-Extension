@@ -3,87 +3,231 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>全能英语单词本PRO</title>
+  <title>霍德英语学习管家</title>
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="theme.css" />
   <style>
-    /* Brighter, closer to the in-page word popup (light, clean, high-contrast) */
-    body{width:360px;margin:0;
-      background:radial-gradient(1200px 420px at 10% -10%, rgba(79,70,229,.25), transparent 60%),
-                 radial-gradient(900px 380px at 110% 0%, rgba(34,197,94,.18), transparent 55%),
-                 linear-gradient(180deg,#f8fafc,#eef2ff);
-      color:#0f172a;
-      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Segoe UI Emoji","Segoe UI Symbol","Apple Color Emoji","Noto Color Emoji";
-      max-height:640px;overflow:auto;}
-    .wrap{padding:14px 14px 16px;}
 
-    .brand{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px;}
-    .brandLeft{display:flex;flex-direction:column;gap:2px}
-    .brand .name{font-weight:900;font-size:16px;letter-spacing:.2px}
-    .brand .subtitle{font-size:11px;color:rgba(15,23,42,.55)}
-    .brandRight{display:flex;align-items:flex-start;gap:8px}
-    .gearBtn{border:1px solid rgba(15,23,42,.10);background:rgba(255,255,255,.85);width:28px;height:28px;border-radius:10px;cursor:pointer;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center}
-    .gearBtn:active{transform:translateY(1px)}
-    .ver{font-size:10px;color:rgba(15,23,42,.38)}
-
-    .card{background:rgba(255,255,255,.80);border:1px solid rgba(15,23,42,.10);border-radius:18px;padding:12px;margin-top:10px;
-      box-shadow:0 10px 30px rgba(15,23,42,.12);
-      backdrop-filter: blur(6px);
+    body{
+      width:360px;margin:0;max-height:640px;overflow:auto;
+      background:radial-gradient(1200px 420px at 10% -10%, rgba(79,70,229,.22), transparent 60%),
+                 radial-gradient(900px 380px at 110% 0%, rgba(124,58,237,.18), transparent 55%),
+                 linear-gradient(180deg,var(--vb-bg),rgba(238,242,255,.85));
+      color:var(--vb-text);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial;
+      font-size:var(--vb-fs-body);
     }
-    .row{display:flex;gap:8px;align-items:center}
-    .actionRow{gap:10px}
-    .actionBtn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+    .wrap{padding:8px 9px 8px;}
 
-    .input{flex:1;border-radius:14px;border:1px solid rgba(15,23,42,.12);background:rgba(255,255,255,.90);color:#0f172a;padding:10px 12px;font-size:13px;outline:none}
+    .brand{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:8px 4px 6px}
+    .brandLeft{display:flex;flex-direction:column;justify-content:center;gap:4px;min-height:58px;flex:1;min-width:0}
+    .brand .name{
+      font-weight:900;
+      font-size:21px;
+      letter-spacing:.01em;
+      line-height:1.06;
+      color:#0f172a;
+      display:flex;
+      flex-wrap:nowrap;
+      align-items:baseline;
+      gap:3px;
+      white-space:nowrap;
+    }
+    .brand .nameHord{
+      background:linear-gradient(135deg,#6d28d9 0%,#7c3aed 55%,#a855f7 100%);
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+      margin-right:2px;
+    }
+    .brand .nameDot{color:#0f172a;opacity:.9}
+    .brand .subtitle{
+      font-size:18px;
+      font-weight:900;
+      line-height:1;
+      background:linear-gradient(135deg,#a78bfa 0%,#8b5cf6 45%,#7c3aed 100%);
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+    }
+    .brandRight{margin-left:10px;display:flex;align-items:center;gap:8px;padding-top:0}
+
+    .gearBtn{
+      border:1px solid var(--vb-border);
+      background:linear-gradient(180deg,rgba(255,255,255,.97),rgba(241,245,249,.95));
+      width:58px;height:58px;
+      border-radius:20px;
+      cursor:pointer;
+      color:#334155;
+      display:inline-flex;align-items:center;justify-content:center;
+      box-shadow:var(--vb-shadow-md);
+    }
+    .gearBtn:hover{filter:brightness(.99);border-color:rgba(79,70,229,.35)}
+    .gearBtn:active{transform:translateY(1px)}
+    .vb-ico{display:block}
+
+    .card{background:var(--vb-surface);border:1px solid var(--vb-border);border-radius:var(--vb-r-card);padding:8px;margin-top:4px;box-shadow:var(--vb-shadow-md);}
+
+    .row{display:flex;gap:6px;align-items:center}
+    .actionRow{gap:6px}
+
+    .input{
+      flex:1;
+      border-radius:var(--vb-r-input);
+      border:1px solid var(--vb-border);
+      background:#fff;
+      color:var(--vb-text);
+      padding:0 16px;
+      height:56px;
+      min-height:56px;
+      font-size:var(--vb-fs-body);
+      outline:none;
+    }
     .input::placeholder{color:rgba(15,23,42,.45)}
 
-    .btn{border:0;border-radius:14px;padding:10px 12px;font-weight:900;cursor:pointer;background:#fff;color:#0f172a;border:1px solid rgba(15,23,42,.10)}
-    .btn.secondary{background:linear-gradient(180deg, rgba(79,70,229,.10), rgba(79,70,229,.06));color:#1e293b;border:1px solid rgba(79,70,229,.18)}
-    .btn.primary{background:linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);color:#fff;border:1px solid rgba(79,70,229,.30);box-shadow:0 10px 18px rgba(79,70,229,.22)}
-    .btn.big{padding:12px 12px;font-weight:900;font-size:13px;border-radius:14px;}
+    .btn{border:0;border-radius:var(--vb-r-btn);padding:10px 12px;font-weight:900;cursor:pointer}
+    .btn.primary{background:var(--vb-brand-grad);color:#fff;box-shadow:var(--vb-shadow-md)}
+    .btn.secondary{background:rgba(15,23,42,.05);border:1px solid var(--vb-border);color:var(--vb-text)}
+    .btn.danger{background:var(--vb-danger-bg);border:1px solid var(--vb-danger-bd);color:var(--vb-danger-fg)}
+    .btn.big{padding:7px 10px;font-size:13px}
     .btn:active{transform:translateY(1px)}
     .btn[disabled]{opacity:.55;cursor:not-allowed}
 
-    .hint{font-size:12px;color:rgba(15,23,42,.62);margin-top:8px;line-height:1.35}
-    .result{white-space:pre-wrap;font-size:13px;line-height:1.45;color:#0f172a}
-    .result .muted{color:rgba(15,23,42,.62);font-size:12px}
+    .actionBtn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+
+    .hint{font-size:var(--vb-fs-cap);color:var(--vb-muted);margin-top:4px;line-height:1.3}
+    .result{white-space:pre-wrap;font-size:var(--vb-fs-body);line-height:1.4;color:var(--vb-text)}
+    .result .muted{color:var(--vb-muted);font-size:var(--vb-fs-cap)}
+
+    .links{display:grid;grid-template-columns:1fr;gap:5px;}
+    .toolCard{background:#fff;border:1px solid var(--vb-border);border-radius:var(--vb-r-card);padding:9px;display:flex;align-items:center;justify-content:space-between;gap:7px;box-shadow:var(--vb-shadow-md);cursor:pointer}
+    .toolText{display:flex;flex-direction:column;gap:1px}
+    .toolTitle{font-size:14px;font-weight:900}
+    .toolDesc{font-size:11px;color:var(--vb-muted)}
+    .toolArrow{font-size:16px;color:rgba(15,23,42,.45)}
+
+    .sysCard{background:var(--vb-surface-2);}
+    .sysHead{font-size:var(--vb-fs-cap);font-weight:900;color:rgba(15,23,42,.70);margin-bottom:4px;display:flex;align-items:center;gap:6px}
 
     /* toggles */
-    .toggles{display:flex;flex-direction:column;gap:8px;margin-top:10px}
-    .toggleRow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 10px;border-radius:14px;background:rgba(255,255,255,.70);border:1px solid rgba(15,23,42,.10)}
-    .toggleRow[data-on="1"]{border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.10)}
-    .toggleRow .label{font-size:13px;font-weight:850}
-    .toggleRow .sub{font-size:11px;color:rgba(15,23,42,.55);margin-top:2px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .toggles{display:flex;flex-direction:column;gap:5px;margin-top:0}
+    .toggleRow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 9px;border-radius:var(--vb-r-card);background:#fff;border:1px solid var(--vb-border)}
+    .toggleRow > div{flex:1;min-width:0}
+    .toggleRow .label{font-size:11px;font-weight:900}
+    .toggleRow .sub{font-size:10px;color:var(--vb-muted);margin-top:1px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .modeBtn{
+      border:1px solid var(--vb-border);
+      background:rgba(15,23,42,.05);
+      color:var(--vb-text);
+      border-radius:999px;
+      font-size:11px;
+      font-weight:800;
+      padding:6px 10px;
+      cursor:pointer;
+      white-space:nowrap;
+    }
+    .modeBtn[data-mode="off"]{
+      background:rgba(34,197,94,.16);
+      border-color:rgba(34,197,94,.42);
+      color:#166534;
+    }
+    .modeBtn[data-mode="light"]{background:rgba(15,23,42,.05);border-color:var(--vb-border);color:var(--vb-text)}
+    .modeBtn[data-mode="auto"]{background:rgba(79,70,229,.12);border-color:rgba(79,70,229,.28);color:#3730a3}
+    .modeBtn[data-mode="dark"]{
+      background:linear-gradient(135deg,#4f46e5 0%,#6366f1 100%);
+      border-color:rgba(129,140,248,.85);
+      color:#eef2ff;
+      text-shadow:0 1px 0 rgba(0,0,0,.25);
+    }
+    .modeBtn[data-mode="page"]{background:var(--vb-danger-bg);border-color:var(--vb-danger-bd);color:var(--vb-danger-fg)}
+    .modeBtn[data-mode="domain"]{background:var(--vb-danger-bg);border-color:var(--vb-danger-bd);color:var(--vb-danger-fg)}
+    .modeBtn[data-mode="global"]{background:#991b1b;border-color:#7f1d1d;color:#fff}
+    .modeBtn:active{transform:translateY(1px)}
 
-    .sw{position:relative;width:44px;height:26px;flex:0 0 auto}
+    .toggleRow.toggle-block[data-on="1"]{border-color:var(--vb-danger-bd);background:var(--vb-danger-bg)}
+    .toggleRow.toggle-block[data-on="1"] .label{color:var(--vb-danger-fg)}
+    .toggleRow.toggle-block[data-on="1"] .sub{color:rgba(153,27,27,.78)}
+    .toggleRow.danger{border-color:var(--vb-danger-bd);background:transparent}
+    .toggleRow.danger .label{color:var(--vb-danger-fg)}
+    .toggleRow.danger .sub{color:rgba(153,27,27,.78)}
+    .toggleRow.danger[data-on="1"]{background:#991b1b;border-color:#7f1d1d}
+    .toggleRow.danger[data-on="1"] .label,.toggleRow.danger[data-on="1"] .sub{color:#fff}
+
+    .sw{position:relative;width:42px;height:24px;flex:0 0 auto}
     .sw input{position:absolute;opacity:0;width:0;height:0}
-    .track{position:absolute;inset:0;border-radius:999px;background:rgba(15,23,42,.10);border:1px solid rgba(15,23,42,.12);transition:.15s}
-    .knob{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:999px;background:#fff;transition:.15s}
-    .sw input:checked + .track{background:rgba(34,197,94,.35);border-color:rgba(34,197,94,.45)}
+    .track{position:absolute;inset:0;border-radius:999px;background:rgba(15,23,42,.10);border:1px solid var(--vb-border);transition:.15s}
+    .knob{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:999px;background:#fff;transition:.15s}
+    .sw input:checked + .track{background:rgba(239,68,68,.22);border-color:var(--vb-danger-bd)}
     .sw input:checked + .track .knob{transform:translateX(18px)}
 
-    .links{display:grid;grid-template-columns:1fr;gap:10px;}
-    .toolCard{background:#fff;border:1px solid rgba(15,23,42,.08);border-radius:16px;padding:12px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 8px 18px rgba(15,23,42,.10);cursor:pointer}
-    .toolText{display:flex;flex-direction:column;gap:2px}
-    .toolTitle{font-size:13px;font-weight:900}
-    .toolDesc{font-size:11px;color:rgba(15,23,42,.55)}
-    .toolArrow{font-size:14px;color:rgba(15,23,42,.45)}
+  
 
-    .sysCard{background:rgba(248,250,252,.90);border:1px solid rgba(15,23,42,.08)}
-    .sysHead{font-size:12px;font-weight:900;color:rgba(15,23,42,.70);margin-bottom:8px;display:flex;align-items:center;gap:6px}
-    .toggleRow.danger .label{color:#dc2626}
-    .toggleRow.danger .sub{color:rgba(220,38,38,.70)}
-  </style>
+  body.vb-force-dark{
+    background:radial-gradient(1200px 420px at 10% -10%, rgba(124,58,237,.34), transparent 60%),
+               radial-gradient(900px 380px at 110% 0%, rgba(91,33,182,.28), transparent 55%),
+               linear-gradient(180deg,var(--vb-bg),rgba(10,8,25,.96));
+  }
+  body.vb-force-dark .gearBtn,
+  body.vb-force-dark .toolCard,
+  body.vb-force-dark .toggleRow,
+  body.vb-force-dark .input{background:rgba(15,23,42,.36);border-color:var(--vb-border);color:var(--vb-text)}
+  body.vb-force-dark .card,
+  body.vb-force-dark .sysCard{background:var(--vb-surface);border-color:var(--vb-border)}
+  body.vb-force-dark .toolArrow,
+  body.vb-force-dark .toolDesc,
+  body.vb-force-dark .sysHead,
+  body.vb-force-dark .toggleRow .sub{color:var(--vb-muted)}
+  body.vb-force-dark .brand .name,
+  body.vb-force-dark .brand .nameDot{color:var(--vb-text)}
+  body.vb-force-dark .btn.secondary{background:rgba(167,139,250,.16);border-color:var(--vb-border);color:var(--vb-text)}
+  body.vb-force-dark .toggleRow.toggle-block[data-on="1"]{background:var(--vb-danger-bg);border-color:var(--vb-danger-bd)}
+  body.vb-force-dark .toggleRow.danger{background:transparent;border-color:var(--vb-danger-bd)}
+  body.vb-force-dark .toggleRow.danger[data-on="1"]{background:#991b1b;border-color:#7f1d1d}
+  body.vb-force-dark .track{background:rgba(167,139,250,.20);border-color:var(--vb-border)}
+  body.vb-force-dark .modeBtn[data-mode="off"]{background:rgba(34,197,94,.24);border-color:rgba(74,222,128,.52);color:#bbf7d0}
+
+  @media (prefers-color-scheme: dark){
+    body:not(.vb-force-light){
+      background:radial-gradient(1200px 420px at 10% -10%, rgba(124,58,237,.34), transparent 60%),
+                 radial-gradient(900px 380px at 110% 0%, rgba(91,33,182,.28), transparent 55%),
+                 linear-gradient(180deg,var(--vb-bg),rgba(10,8,25,.96));
+    }
+    body:not(.vb-force-light) .gearBtn,
+    body:not(.vb-force-light) .toolCard,
+    body:not(.vb-force-light) .toggleRow,
+    body:not(.vb-force-light) .input{background:rgba(15,23,42,.36);border-color:var(--vb-border);color:var(--vb-text)}
+    body:not(.vb-force-light) .card,
+    body:not(.vb-force-light) .sysCard{background:var(--vb-surface);border-color:var(--vb-border)}
+    body:not(.vb-force-light) .toolArrow,
+    body:not(.vb-force-light) .toolDesc,
+    body:not(.vb-force-light) .sysHead,
+    body:not(.vb-force-light) .toggleRow .sub{color:var(--vb-muted)}
+    body:not(.vb-force-light) .brand .name,
+    body:not(.vb-force-light) .brand .nameDot{color:var(--vb-text)}
+    body:not(.vb-force-light) .btn.secondary{background:rgba(167,139,250,.16);border-color:var(--vb-border);color:var(--vb-text)}
+    body:not(.vb-force-light) .toggleRow.toggle-block[data-on="1"]{background:var(--vb-danger-bg);border-color:var(--vb-danger-bd)}
+    body:not(.vb-force-light) .toggleRow.danger{background:transparent;border-color:var(--vb-danger-bd)}
+    body:not(.vb-force-light) .toggleRow.danger[data-on="1"]{background:#991b1b;border-color:#7f1d1d}
+    body:not(.vb-force-light) .track{background:rgba(167,139,250,.20);border-color:var(--vb-border)}
+    body:not(.vb-force-light) .modeBtn[data-mode="off"]{background:rgba(34,197,94,.24);border-color:rgba(74,222,128,.52);color:#bbf7d0}
+  }
+
+</style>
 </head>
 <body>
   <div class="wrap">
     <div class="brand">
       <div class="brandLeft">
-        <div class="name">全能英语单词本 PRO</div>
-        <div class="subtitle">Vocabulary Efficiency Tool</div>
+        <div class="name"><span class="nameHord">HORD</span><span class="nameDot">·</span><span>霍德英语学习管家</span></div>
+        <div class="subtitle">Own Your Words</div>
       </div>
       <div class="brandRight">
-        <button id="openOptions" class="gearBtn" title="设置">⚙</button>
-        <div id="ver" class="ver">Version</div>
+        <button id="openOptions" class="gearBtn" title="设置">
+          <svg class="vb-ico" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.591 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.59c1.756.427 1.756 2.925 0 3.352a1.724 1.724 0 0 0-1.066 2.59c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.59 1.065c-.427 1.756-2.925 1.756-3.352 0a1.724 1.724 0 0 0-2.59-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.59c-1.756-.427-1.756-2.925 0-3.352a1.724 1.724 0 0 0 1.066-2.59c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.59-1.065Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -92,13 +236,13 @@
         <input id="q" class="input" placeholder="输入单词或句子…" />
       </div>
 
-      <div class="row actionRow" style="margin-top:10px">
+      <div class="row actionRow" style="margin-top:4px">
         <button id="btnAdd" class="btn primary actionBtn">➕ 添加生词</button>
         <button id="btnTranslate" class="btn secondary actionBtn">⚡ 立即翻译</button>
       </div>
 
-      <div id="err" class="hint" style="display:none;color:#fca5a5;margin-top:10px"></div>
-      <div id="out" class="result" style="display:none;margin-top:10px"></div>
+      <div id="err" class="hint" style="display:none;color:#fca5a5;margin-top:5px"></div>
+      <div id="out" class="result" style="display:none;margin-top:5px"></div>
     </div>
 
     <div class="card">
@@ -107,6 +251,13 @@
           <div class="toolText">
             <div class="toolTitle">📚 管理单词本</div>
             <div class="toolDesc">查看、编辑、排序你的单词</div>
+          </div>
+          <div class="toolArrow">→</div>
+        </div>
+        <div id="openQuotes" class="toolCard">
+          <div class="toolText">
+            <div class="toolTitle">✨ 金句收藏库</div>
+            <div class="toolDesc">查看、管理你收藏的金句</div>
           </div>
           <div class="toolArrow">→</div>
         </div>
@@ -122,39 +273,22 @@
 
     <!-- switches at the very bottom (highest discoverability, no overlap with translation output) -->
     <div class="card sysCard">
-      <div class="sysHead">⚙ 插件控制</div>
+      <div class="sysHead">⚙️ 插件控制</div>
       <div class="toggles" style="margin-top:0">
-        <div class="toggleRow" id="rowPage" data-on="0">
-          <div>
-            <div class="label">不在此网页使用</div>
-            <div class="sub" id="pageLabel">当前页</div>
-          </div>
-          <label class="sw">
-            <input id="swPage" type="checkbox" />
-            <span class="track"><span class="knob"></span></span>
-          </label>
-        </div>
 
-        <div class="toggleRow" id="rowDomain" data-on="0">
+        <div class="toggleRow" id="rowThemeMode" data-on="0">
           <div>
-            <div class="label">不在此域名使用</div>
-            <div class="sub" id="domainLabel">当前域名</div>
+            <div class="label">夜间深色模式</div>
+            <div class="sub" id="themeModeHint">当前：跟随系统</div>
           </div>
-          <label class="sw">
-            <input id="swDomain" type="checkbox" />
-            <span class="track"><span class="knob"></span></span>
-          </label>
+          <button id="btnThemeMode" class="modeBtn" data-mode="auto" type="button">跟随系统</button>
         </div>
-
-        <div class="toggleRow danger" id="rowGlobal" data-on="0">
+        <div class="toggleRow" id="rowBlockMode" data-on="0">
           <div>
-            <div class="label">完全关闭插件</div>
-            <div class="sub">所有网页都停用（可随时再开）</div>
+            <div class="label">停用范围</div>
+            <div class="sub" id="blockModeHint">正常运行（点击右侧切换：此页/域名/全部）</div>
           </div>
-          <label class="sw">
-            <input id="swGlobal" type="checkbox" />
-            <span class="track"><span class="knob"></span></span>
-          </label>
+          <button id="btnBlockMode" class="modeBtn" data-mode="off" type="button">正常运行</button>
         </div>
       </div>
     </div>

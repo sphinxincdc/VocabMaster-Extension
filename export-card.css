@@ -1,0 +1,504 @@
+.quoteModalMask{
+  background:rgba(4,6,20,0.72) !important;
+  backdrop-filter:blur(5px) saturate(0.85);
+}
+
+body.quote-export-open{
+  overflow:hidden;
+}
+
+body.quote-export-open > .hero,
+body.quote-export-open > .container{
+  filter:brightness(0.72) saturate(0.74);
+  transition:filter .2s ease;
+}
+
+.quoteModal.saasQuoteModal{
+  width:min(1480px,98vw);
+  height:min(980px,94vh);
+  border-radius:20px;
+  box-shadow:0 34px 92px rgba(8,12,38,0.5);
+  overflow:hidden;
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr) auto;
+}
+
+.quoteModal.saasQuoteModal .quoteModalHd{
+  padding:11px 16px;
+  min-height:42px;
+  background:linear-gradient(135deg,#2c2c54,#40407a);
+  color:#eef2ff;
+  font-weight:900;
+}
+
+.quoteModal.saasQuoteModal .quoteModalBd{
+  padding:16px;
+  display:grid;
+  grid-template-columns:360px minmax(0,1fr);
+  gap:18px;
+  align-items:stretch;
+  min-height:0;
+  overflow:hidden;
+}
+
+.quoteModal.saasQuoteModal .quoteSettings{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  min-height:0;
+  max-height:100%;
+  overflow:auto;
+  padding-right:4px;
+}
+
+.quoteModal.saasQuoteModal .quoteSettings::-webkit-scrollbar{width:10px}
+.quoteModal.saasQuoteModal .quoteSettings::-webkit-scrollbar-thumb{
+  background:rgba(99,102,241,.28);
+  border-radius:999px;
+}
+.quoteModal.saasQuoteModal .quoteSettings::-webkit-scrollbar-track{
+  background:rgba(148,163,184,.14);
+  border-radius:999px;
+}
+
+.quoteQuick{
+  position:relative;
+  top:auto;
+  z-index:1;
+  background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(255,255,255,.93));
+  border:1px solid #dbe2f3;
+  border-radius:14px;
+  padding:10px;
+  box-shadow:0 8px 22px rgba(44,52,99,.12);
+  margin-bottom:8px;
+}
+
+.quoteQuickActions{
+  margin-top:4px;
+  display:flex;
+  gap:8px;
+}
+
+.quoteQuickActions .btn{
+  flex:1 1 auto;
+}
+
+.quoteAdvanced{
+  min-height:0;
+}
+
+.quoteSection{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.quoteSectionTitle{
+  font-size:12px;
+  letter-spacing:.2px;
+  color:#59617a;
+  font-weight:900;
+}
+
+.quoteField{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.quoteField label{
+  font-size:12px;
+  font-weight:800;
+  color:#44506a;
+}
+
+.quoteSelect{
+  width:100%;
+  max-width:320px;
+}
+
+.quoteTextInput{
+  width:100%;
+  max-width:none;
+  font-size:13px;
+  min-width:0;
+}
+
+.quoteTextArea{
+  width:100%;
+  max-width:none;
+  min-height:132px;
+  border-radius:12px;
+  border:1px solid #b8c6e6;
+  padding:10px 12px;
+  resize:vertical;
+  font-size:13px;
+  line-height:1.62;
+  background:#fff;
+  color:#111827;
+}
+
+.quoteField input[type="range"]{
+  width:100%;
+  max-width:320px;
+}
+
+.quoteInlineAction{
+  display:flex;
+  gap:8px;
+  align-items:flex-start;
+}
+
+.quoteInlineAction .btn{
+  flex:0 0 auto;
+  min-width:52px;
+  padding:8px 10px;
+}
+
+.quoteTemplateWall{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  max-width:320px;
+  max-height:190px;
+  overflow:auto;
+  padding-right:2px;
+}
+
+.quoteTplThumb{
+  border:1px solid #dbe2f3;
+  border-radius:10px;
+  background:#fff;
+  color:#334155;
+  padding:8px 10px;
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.quoteTplThumb.active{
+  border-color:#4f46e5;
+  box-shadow:0 0 0 2px rgba(79,70,229,0.16);
+  color:#3730a3;
+}
+
+.quoteFavActions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.quoteOptionalSection{
+  border:1px dashed #d8def0;
+  border-radius:12px;
+  padding:10px;
+  background:rgba(247,249,255,.72);
+}
+
+.quoteOptionalSection > summary{
+  cursor:pointer;
+  font-size:12px;
+  font-weight:900;
+  color:#4a5575;
+  margin-bottom:10px;
+}
+
+.quoteFavActions .btn{
+  padding:7px 10px;
+}
+
+#quoteFontAdjustValue{
+  font-weight:900;
+  color:#4f46e5;
+}
+
+.quoteChecks{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+.quoteChecks label{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:13px;
+  color:#334155;
+  font-weight:700;
+}
+
+.quotePreviewArea{
+  border-radius:16px;
+  padding:14px;
+  background:linear-gradient(160deg,#f7f9ff,#f0f4ff);
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-start;
+  gap:8px;
+  min-height:0;
+  max-height:100%;
+  overflow:hidden;
+}
+
+.quotePreviewTop{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.quotePreviewTop .quoteQualityHint{
+  flex:1 1 auto;
+  padding:6px 10px;
+}
+
+.quotePreviewControls{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  flex:0 0 auto;
+}
+
+.quotePreviewControls label{
+  font-size:12px;
+  color:#475569;
+  font-weight:800;
+}
+
+.quotePreviewScale{
+  min-width:88px;
+  padding:5px 10px;
+}
+
+.quotePreviewStage{
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+  border-radius:14px;
+  background:rgba(255,255,255,.48);
+  padding:8px;
+}
+
+.quotePreviewWrap{
+  border:0;
+  border-radius:16px;
+  background:transparent;
+  padding:4px;
+  box-shadow:none;
+  max-width:100%;
+  max-height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.quotePreviewCanvas{
+  width:auto;
+  max-width:100%;
+  max-height:100%;
+  display:block;
+  border-radius:16px;
+  border:0;
+  background:transparent;
+  box-shadow:0 10px 30px rgba(61,76,150,0.16);
+}
+
+.quoteHint{
+  font-size:12px;
+  color:#6b7280;
+  line-height:1.4;
+}
+
+.quoteQualityHint{
+  margin-top:0;
+  padding:8px 10px;
+  border-radius:10px;
+  font-size:12px;
+  line-height:1.45;
+  border:1px solid #dbe2f3;
+  background:#f8fafc;
+  color:#475569;
+}
+
+.quoteQualityHint.ok{
+  border-color:#bbf7d0;
+  background:#f0fdf4;
+  color:#166534;
+}
+
+.quoteQualityHint.warn{
+  border-color:#fde68a;
+  background:#fffbeb;
+  color:#92400e;
+}
+
+.quoteQualityHint.high{
+  border-color:#fecaca;
+  background:#fef2f2;
+  color:#991b1b;
+}
+
+.quoteModal.saasQuoteModal .quoteModalFt{
+  border-top:1px solid #e6e9f7;
+  padding:12px 16px;
+  position:sticky;
+  bottom:0;
+  background:rgba(255,255,255,.96);
+  backdrop-filter:blur(4px);
+}
+
+.quoteProHint{
+  color:#6b7280;
+  font-size:12px;
+}
+
+@media (max-width:820px){
+  .quoteModal.saasQuoteModal{
+    height:auto;
+    max-height:92vh;
+    display:block;
+  }
+  .quoteModal.saasQuoteModal .quoteModalBd{
+    grid-template-columns:1fr;
+    min-height:auto;
+    max-height:none;
+    overflow:visible;
+  }
+  .quoteQuick{position:static}
+  .quoteAdvanced{max-height:none;overflow:visible;padding-bottom:0}
+  .quotePreviewArea{
+    min-height:300px;
+    max-height:none;
+    overflow:visible;
+    padding-bottom:14px;
+  }
+  .quotePreviewTop{flex-wrap:wrap}
+  .quotePreviewControls{margin-left:auto}
+  .quotePreviewStage{overflow:visible}
+}
+
+@media (prefers-color-scheme: dark){
+  .quoteModal.saasQuoteModal .quoteModalBd{background:rgba(10,13,30,.96)}
+  body.quote-export-open > .hero,
+  body.quote-export-open > .container{filter:brightness(0.6) saturate(0.6)}
+  .quoteQuick{
+    background:linear-gradient(180deg,rgba(13,17,36,.98),rgba(13,17,36,.93));
+    border-color:rgba(129,140,248,.28);
+  }
+  .quoteOptionalSection{
+    background:rgba(15,23,42,.34);
+    border-color:rgba(129,140,248,.28);
+  }
+  .quoteOptionalSection > summary{color:#c8cff0}
+  .quoteSectionTitle{color:#b5bee2}
+  .quoteField label,.quoteChecks label,.quoteHint,.quoteProHint,.quotePreviewControls label{color:#c8cff0}
+  .quoteQualityHint{
+    background:rgba(15,23,42,.45);
+    border-color:rgba(129,140,248,.28);
+    color:#dbe4ff;
+  }
+  .quoteQualityHint.ok{
+    background:rgba(18,92,58,.32);
+    border-color:rgba(74,222,128,.36);
+    color:#bbf7d0;
+  }
+  .quoteQualityHint.warn{
+    background:rgba(120,77,9,.34);
+    border-color:rgba(251,191,36,.38);
+    color:#fde68a;
+  }
+  .quoteQualityHint.high{
+    background:rgba(127,29,29,.36);
+    border-color:rgba(248,113,113,.38);
+    color:#fecaca;
+  }
+  .quoteTplThumb{
+    background:rgba(15,23,42,.42);
+    border-color:rgba(129,140,248,.28);
+    color:#e2e8f0;
+  }
+  .quoteTplThumb.active{
+    border-color:#a5b4fc;
+    color:#c4b5fd;
+    box-shadow:0 0 0 2px rgba(165,180,252,0.2);
+  }
+  #quoteFontAdjustValue{color:#c4b5fd}
+  .quoteTextArea{
+    background:rgba(15,23,42,.42);
+    border-color:rgba(129,140,248,.28);
+    color:#e5e7eb;
+  }
+  .quoteModal.saasQuoteModal .quoteModalFt{
+    background:rgba(10,13,30,.95);
+  }
+  .quotePreviewArea{
+    background:linear-gradient(170deg,rgba(26,30,58,.92),rgba(18,24,49,.92));
+  }
+  .quotePreviewStage{
+    background:rgba(15,23,42,.34);
+  }
+  .quoteModal.saasQuoteModal .quoteModalFt{border-top:1px solid rgba(129,140,248,.3)}
+}
+
+body.vb-force-dark .quoteModal.saasQuoteModal .quoteModalBd{background:rgba(10,13,30,.96)}
+body.vb-force-dark .quoteQuick{
+  background:linear-gradient(180deg,rgba(13,17,36,.98),rgba(13,17,36,.93));
+  border-color:rgba(129,140,248,.28);
+}
+body.vb-force-dark .quoteOptionalSection{
+  background:rgba(15,23,42,.34);
+  border-color:rgba(129,140,248,.28);
+}
+body.vb-force-dark .quoteOptionalSection > summary{color:#c8cff0}
+body.vb-force-dark .quoteSectionTitle{color:#b5bee2}
+body.vb-force-dark .quoteField label,
+body.vb-force-dark .quoteChecks label,
+body.vb-force-dark .quoteHint,
+body.vb-force-dark .quoteProHint,
+body.vb-force-dark .quotePreviewControls label{color:#c8cff0}
+body.vb-force-dark .quoteQualityHint{
+  background:rgba(15,23,42,.45);
+  border-color:rgba(129,140,248,.28);
+  color:#dbe4ff;
+}
+body.vb-force-dark .quoteQualityHint.ok{
+  background:rgba(18,92,58,.32);
+  border-color:rgba(74,222,128,.36);
+  color:#bbf7d0;
+}
+body.vb-force-dark .quoteQualityHint.warn{
+  background:rgba(120,77,9,.34);
+  border-color:rgba(251,191,36,.38);
+  color:#fde68a;
+}
+body.vb-force-dark .quoteQualityHint.high{
+  background:rgba(127,29,29,.36);
+  border-color:rgba(248,113,113,.38);
+  color:#fecaca;
+}
+body.vb-force-dark .quoteTplThumb{
+  background:rgba(15,23,42,.42);
+  border-color:rgba(129,140,248,.28);
+  color:#e2e8f0;
+}
+body.vb-force-dark .quoteTplThumb.active{
+  border-color:#a5b4fc;
+  color:#c4b5fd;
+  box-shadow:0 0 0 2px rgba(165,180,252,0.2);
+}
+body.vb-force-dark .quoteTextArea{
+  background:rgba(15,23,42,.42);
+  border-color:rgba(129,140,248,.28);
+  color:#e5e7eb;
+}
+body.vb-force-dark .quotePreviewArea{
+  background:linear-gradient(170deg,rgba(26,30,58,.92),rgba(18,24,49,.92));
+}
+body.vb-force-dark .quotePreviewStage{
+  background:rgba(15,23,42,.34);
+}
+body.vb-force-dark .quoteModal.saasQuoteModal .quoteModalFt{border-top:1px solid rgba(129,140,248,.3)}
+body.vb-force-dark .quoteModal.saasQuoteModal .quoteModalFt{background:rgba(10,13,30,.95)}

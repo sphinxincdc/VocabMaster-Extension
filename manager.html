@@ -3,9 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>全能英语单词本PRO</title>
+  <title>霍德英语学习管家</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="manager.css" />
+  <link rel="stylesheet" href="theme.css" />
   <style>
     body{margin:0;background:#f5f7fb;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial;}
     .hero{position:relative;
@@ -14,13 +15,14 @@
     }
     .hero h1{margin:0;font-size:42px;font-weight:900;letter-spacing:0.2px;line-height:1.1;text-align:center}
     .titleWrap{display:flex;align-items:center;justify-content:center;gap:16px}
-    .appLogo{width:82px;height:82px;border-radius:18px;object-fit:cover;display:inline-block;background:#6d28d9;padding:8px;box-sizing:border-box;box-shadow:0 14px 28px rgba(0,0,0,.22)}
+    .appLogo{width:82px;height:82px;border-radius:0;object-fit:contain;display:inline-block;background:transparent;padding:0;box-sizing:border-box;box-shadow:none}
     .titleText{display:flex;flex-direction:column;align-items:flex-start;gap:4px}
     .titleLine{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
     .titleText .sub{font-size:15px;font-weight:900;opacity:.95;line-height:1}
     .verInline{font-size:14px;font-weight:900;opacity:.9}
-    .tagline{font-size:18px;font-weight:800;letter-spacing:.3px;opacity:.98;color:#facc15;font-family:"Segoe Script","Lucida Handwriting","Trebuchet MS","KaiTi","STKaiti",cursive}
-    @media (max-width:560px){.appLogo{width:58px;height:58px;border-radius:12px}.hero h1{font-size:34px}.tagline{font-size:14px}}
+    .tagline{font-size:18px;font-weight:800;letter-spacing:.3px;opacity:.95;color:#e2e8f0}
+    .brandSignature{font-size:13px;font-weight:600;letter-spacing:2px;opacity:.85;color:#e2e8f0;text-transform:none}
+    @media (max-width:560px){.appLogo{width:58px;height:58px;border-radius:0}.hero h1{font-size:34px}.tagline{font-size:14px}.brandSignature{font-size:11px;letter-spacing:1.4px}}
     .hero .meta{margin-top:8px;opacity:.95;font-size:12px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;line-height:1.5;max-width:100%}
     .hero .meta span{max-width:100%;word-break:break-word}
     .hero .progressRow{margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
@@ -37,10 +39,10 @@
     .reviewBtn{margin-left:auto;border:0;border-radius:999px;padding:10px 14px;font-weight:1000;cursor:pointer;background:rgba(255,255,255,.92);color:#111;display:inline-flex;align-items:center;gap:8px;box-shadow:0 10px 24px rgba(0,0,0,.18)}
     .reviewBtn:hover{transform:translateY(-1px)}
     .container{max-width:1200px;margin:0 auto;padding:14px 14px 40px;}
-    .cards{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:14px;margin-top:16px}
+    .cards{display:grid;grid-template-columns:repeat(6,minmax(120px,1fr));gap:12px;margin-top:14px}
     @media (max-width: 980px){ .cards{grid-template-columns:repeat(2,minmax(0,1fr));} }
-    .card{background:rgba(255,255,255,.92);border-radius:18px;padding:4px 10px 4px 16px;box-shadow:0 10px 30px rgba(0,0,0,.12);min-height:22px;display:flex;flex-direction:column;gap:3px}
-    .card h3{margin-left:10px;}
+    .card{background:rgba(255,255,255,.92);border-radius:18px;padding:8px 10px 6px 14px;box-shadow:0 10px 30px rgba(0,0,0,.12);min-height:0;display:flex;flex-direction:column;gap:2px}
+    .card h3{margin:0;font-size:14px;font-weight:900;}
 .card--red{background:rgba(255,80,80,.18)}
 .card--orange{background:rgba(255,170,0,.18)}
 .card--green{background:rgba(0,200,120,.18)}
@@ -53,11 +55,36 @@
     .card .value{margin-top:1px;font-size:15px;font-weight:900}
     .card .bar{display:none}
     .card .bar > div{height:100%;width:0%}
-    .toolbar{margin-top:14px;background:#fff;border-radius:16px;padding:12px;box-shadow:0 10px 28px rgba(0,0,0,.06);display:flex;gap:10px;align-items:center;flex-wrap:wrap;position:sticky;top:10px;z-index:10}
-    .toolbar-right{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .toolbar{margin-top:14px;background:#fff;border-radius:16px;padding:12px;box-shadow:0 10px 28px rgba(0,0,0,.06);display:flex;gap:10px;align-items:center;flex-wrap:nowrap;position:sticky;top:10px;z-index:10;overflow-x:auto}
+    .toolbar,.toolbar *{box-sizing:border-box}
+    .toolbar-right{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:nowrap;flex:0 0 auto}
     .input{border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;background:#fff;min-width:220px}
-    .searchInput{min-width:28px;width:28px;max-width:44px;text-align:center}
-    .searchInput::placeholder{text-align:center}
+    /* Search: keep size stable on focus (no popover expansion => no layout shift) */
+    .searchPopoverWrap{
+      position:relative;
+      flex: 1 1 420px;
+      min-width: 260px;
+      max-width: 420px;
+      z-index:6;
+    }
+    .searchInput{
+      position:relative;
+      z-index:1;
+      width:100%;
+      min-width:0;
+      max-width:100%;
+      text-align:left;
+      border:1px solid #e5e7eb; /* keep 1px in all states */
+      transition: box-shadow .18s ease, background .18s ease, border-color .18s ease;
+    }
+    .searchInput::placeholder{ text-align:left; }
+    .searchInput:focus{
+      outline:none;
+      border-color:#6B5BFF;
+      box-shadow:0 0 0 3px rgba(107,91,255,0.18);
+    }
+    @media (max-width:1200px){.searchPopoverWrap{max-width:360px}}
+    @media (max-width:980px){.searchPopoverWrap{max-width:260px}}
     .select{border:1px solid #e5e7eb;border-radius:12px;padding:10px 12px;background:#fff}
     .btn{border:0;border-radius:12px;padding:10px 12px;font-weight:900;cursor:pointer}
     .btn.primary{background:#4f46e5;color:#fff}
@@ -92,6 +119,22 @@
     .modalHd{padding:14px 16px;background:#111827;color:#fff;font-weight:900;display:flex;justify-content:space-between;align-items:center}
     .modalBd{padding:14px 16px}
     .modalFt{padding:12px 16px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid #eee}
+    .quoteModalMask{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:1000000}
+    .quoteModal{width:min(760px,94vw);background:#fff;border-radius:18px;box-shadow:0 30px 80px rgba(0,0,0,.25);overflow:hidden}
+    .quoteModalHd{padding:14px 16px;background:#111827;color:#fff;font-weight:900;display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .quoteModalBd{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .quoteSettings{display:flex;flex-direction:column;gap:10px}
+    .quoteField{display:flex;flex-direction:column;gap:6px}
+    .quoteField label{font-size:12px;font-weight:800;color:#475569}
+    .quoteOptionGroup{display:flex;gap:8px;flex-wrap:wrap}
+    .quoteOptionGroup .pill{cursor:pointer}
+    .quoteChecks{display:flex;flex-direction:column;gap:8px}
+    .quoteChecks label{display:flex;align-items:center;gap:8px;font-size:13px;color:#334155;font-weight:700}
+    .quotePreviewWrap{border:1px solid #e5e7eb;border-radius:14px;background:#f8fafc;padding:10px}
+    .quotePreviewCanvas{width:100%;display:block;border-radius:12px;border:1px solid #e5e7eb;background:#fff}
+    .quoteHint{font-size:12px;color:#6b7280;line-height:1.4}
+    .quoteModalFt{padding:12px 16px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid #eee}
+    @media (max-width:720px){.quoteModalBd{grid-template-columns:1fr}}
     textarea{width:100%;min-height:220px;border:1px solid #e5e7eb;border-radius:14px;padding:12px;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,"Liberation Mono","Courier New",monospace;font-size:12px}
     .small{font-size:12px;color:#6b7280}
   
@@ -217,6 +260,65 @@
 .miniBar.cur{
   background: rgba(59,130,246,0.75);
 }
+
+
+/* === Visual System v2 (unified tokens, no logic changes) === */
+
+body{background:var(--vb-bg);color:var(--vb-text);font-size:var(--vb-fs-body);}
+
+/* Hero: keep structure, unify gradient + typography */
+.hero{background:var(--vb-brand-grad);padding:18px 18px 12px;}
+.hero h1{font-size:var(--vb-fs-h1);font-weight:800;line-height:1.2;text-align:left;max-width:1200px;margin:0 auto;}
+.titleWrap{justify-content:flex-start;}
+.titleText .sub{font-size:var(--vb-fs-body);}
+.verInline{font-size:var(--vb-fs-cap);opacity:.85}
+.tagline{font-size:var(--vb-fs-body);font-weight:800;letter-spacing:.2px;opacity:.95;color:rgba(255,255,255,.90);font-family:inherit}
+
+/* Tabs / primary actions */
+.tab{border-radius:var(--vb-r-pill);padding:8px 12px;font-weight:900;}
+.tab.active{background:#fff;color:var(--vb-text);border-color:#fff}
+.reviewBtn{border-radius:var(--vb-r-btn);padding:10px 12px;font-weight:900;box-shadow:var(--vb-shadow-md)}
+
+/* Stat cards (six blocks) */
+.card{border-radius:var(--vb-r-card);padding:8px 14px 6px;min-height:0;box-shadow:var(--vb-shadow-md);border:1px solid var(--vb-border);background:var(--vb-surface);gap:0}
+.card h3{font-size:var(--vb-fs-body);font-weight:900;padding-left:10px}
+.card .label{font-size:var(--vb-fs-cap);color:var(--vb-muted);font-weight:800}
+.card .value{font-size:var(--vb-fs-h2);font-weight:900;margin-top:0;padding-left:10px}
+.card-action{margin-top:0;align-self:stretch;border:1px solid var(--vb-border);background:rgba(255,255,255,.78);border-radius:var(--vb-r-pill);padding:6px 12px;font-weight:900;font-size:var(--vb-fs-cap);line-height:1.2;color:var(--vb-text);cursor:pointer}
+.card-action:hover{filter:brightness(.99)}
+
+
+/* Keep existing colorful backgrounds but constrain to semantic palette */
+.card--red{background:var(--vb-danger-bg)}
+.card--orange{background:var(--vb-warning-bg)}
+.card--green{background:var(--vb-success-bg)}
+.card--purple{background:#eee8fb}
+.card--indigo{background:#d8f2f5}
+.card--sky{background:#dbeafe}
+.card--amber{background:#efe6fb}
+
+/* Toolbar/table cards */
+.toolbar{border-radius:var(--vb-r-card);padding:var(--vb-card-pad);box-shadow:var(--vb-shadow-md);border:1px solid var(--vb-border)}
+.tableWrap{border-radius:var(--vb-r-card);box-shadow:var(--vb-shadow-md);border:1px solid var(--vb-border)}
+
+/* Inputs/selects */
+.input,.select{border-radius:var(--vb-r-input);border:1px solid var(--vb-border);font-size:var(--vb-fs-body)}
+
+/* Buttons: map legacy variants into 3 types */
+.btn{border-radius:var(--vb-r-btn);padding:10px 12px;font-weight:900}
+.btn.primary,.btn.purple,.btn.green{background:var(--vb-brand-grad);border:0;color:#fff;box-shadow:var(--vb-shadow-md)}
+.btn.ghost,.btn.yellow,.btn.dark{background:rgba(15,23,42,.05);border:1px solid var(--vb-border);color:var(--vb-text)}
+.btn.danger,.btn.danger-light{background:var(--vb-danger-bg);border:1px solid var(--vb-danger-bd);color:var(--vb-danger-fg)}
+.btn.danger-deep{background:#991b1b;border:1px solid #7f1d1d;color:#fff}
+
+/* Pills / tags */
+.pill{border-radius:var(--vb-r-pill);border:1px solid var(--vb-border);background:#fff;font-size:var(--vb-fs-cap)}
+.noteTag{border-radius:var(--vb-r-pill);border:1px solid rgba(124,58,237,.28);background:rgba(124,58,237,.14);color:#5b21b6}
+
+/* Table typography */
+thead th{font-size:var(--vb-fs-cap)}
+.word{font-size:var(--vb-fs-h2);font-weight:900}
+.muted{font-size:var(--vb-fs-cap);color:var(--vb-muted)}
 </style>
 
 
@@ -227,7 +329,638 @@
   pointer-events: none !important;
   box-shadow: none !important;
 }
+
+  @media (prefers-color-scheme: dark){
+    body{background:var(--vb-bg);color:var(--vb-text)}
+    .hero{background:linear-gradient(135deg,#4c1d95,#1e1b4b)}
+    .tagline,.brandSignature,.hero .meta{color:rgba(237,233,254,.9)}
+    .card,.toolbar,.tableWrap,.hintBox,.modal,.quoteModal{background:var(--vb-surface);border:1px solid var(--vb-border);color:var(--vb-text)}
+    .card .label,.muted,.small,.empty,.sectionTitle{color:var(--vb-muted)}
+    .input,.select,textarea,.pill,.quotePreviewWrap,.quotePreviewCanvas{background:rgba(15,23,42,.36);border-color:var(--vb-border);color:var(--vb-text)}
+    .searchInput{background:rgba(15,23,42,.36);border-color:var(--vb-border);color:var(--vb-text)}
+    .searchInput:focus{border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.20)}
+    thead th{background:rgba(15,23,42,.45);border-bottom:1px solid var(--vb-border);color:var(--vb-muted)}
+    tbody td{border-bottom:1px solid rgba(167,139,250,.16)}
+    tbody tr:hover{background:rgba(167,139,250,.10)}
+    .btn.ghost,.btn.yellow,.btn.dark{background:rgba(167,139,250,.16);border-color:var(--vb-border);color:var(--vb-text)}
+    .btn.danger-light{background:var(--vb-danger-bg);border-color:var(--vb-danger-bd);color:var(--vb-danger-fg)}
+    .btn.danger-deep{background:#991b1b;color:#fff}
+    .modalHd,.quoteModalHd{background:rgba(12,10,25,.95);color:#ede9fe}
+    .modalFt,.quoteModalFt{border-top:1px solid var(--vb-border)}
+    .noteTag{background:rgba(124,58,237,.24);color:#ddd6fe}
+    .noteText{color:#c4b5fd}
+
+    .word-card,.sentence-card{background:rgba(15,23,42,.82);border:1px solid var(--vb-border);color:var(--vb-text)}
+    .word-title,.sentence-text{color:var(--vb-text)}
+    .word-meaning,.sentence-translation{color:var(--vb-text)}
+    .word-note,.sentence-note{color:#c4b5fd}
+  }
+
+  body.vb-force-dark{background:var(--vb-bg);color:var(--vb-text)}
+  body.vb-force-dark .hero{background:linear-gradient(135deg,#4c1d95,#1e1b4b)}
+  body.vb-force-dark .tagline,body.vb-force-dark .brandSignature,body.vb-force-dark .hero .meta{color:rgba(237,233,254,.9)}
+  body.vb-force-dark .card,body.vb-force-dark .toolbar,body.vb-force-dark .tableWrap,body.vb-force-dark .hintBox,body.vb-force-dark .modal,body.vb-force-dark .quoteModal{background:var(--vb-surface);border:1px solid var(--vb-border);color:var(--vb-text)}
+  body.vb-force-dark .card .label,body.vb-force-dark .muted,body.vb-force-dark .small,body.vb-force-dark .empty,body.vb-force-dark .sectionTitle{color:var(--vb-muted)}
+  body.vb-force-dark .input,body.vb-force-dark .select,body.vb-force-dark textarea,body.vb-force-dark .pill,body.vb-force-dark .quotePreviewWrap,body.vb-force-dark .quotePreviewCanvas{background:rgba(15,23,42,.36);border-color:var(--vb-border);color:var(--vb-text)}
+  body.vb-force-dark .searchInput{background:rgba(15,23,42,.36);border-color:var(--vb-border);color:var(--vb-text)}
+  body.vb-force-dark .searchInput:focus{border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.20)}
+  body.vb-force-dark thead th{background:rgba(15,23,42,.45);border-bottom:1px solid var(--vb-border);color:var(--vb-muted)}
+  body.vb-force-dark tbody td{border-bottom:1px solid rgba(167,139,250,.16)}
+  body.vb-force-dark tbody tr:hover{background:rgba(167,139,250,.10)}
+  body.vb-force-dark .btn.ghost,body.vb-force-dark .btn.yellow,body.vb-force-dark .btn.dark{background:rgba(167,139,250,.16);border-color:var(--vb-border);color:var(--vb-text)}
+  body.vb-force-dark .btn.danger-light{background:var(--vb-danger-bg);border-color:var(--vb-danger-bd);color:var(--vb-danger-fg)}
+  body.vb-force-dark .btn.danger-deep{background:#991b1b;color:#fff}
+  body.vb-force-dark .modalHd,body.vb-force-dark .quoteModalHd{background:rgba(12,10,25,.95);color:#ede9fe}
+  body.vb-force-dark .modalFt,body.vb-force-dark .quoteModalFt{border-top:1px solid var(--vb-border)}
+  body.vb-force-dark .noteTag{background:rgba(124,58,237,.24);color:#ddd6fe}
+  body.vb-force-dark .noteText{color:#c4b5fd}
+
+    body.vb-force-dark .word-card,body.vb-force-dark .sentence-card{background:rgba(15,23,42,.82);border:1px solid var(--vb-border);color:var(--vb-text)}
+    body.vb-force-dark .word-title,body.vb-force-dark .sentence-text{color:var(--vb-text)}
+    body.vb-force-dark .word-meaning,body.vb-force-dark .sentence-translation{color:var(--vb-text)}
+    body.vb-force-dark .word-note,body.vb-force-dark .sentence-note{color:#c4b5fd}
+
 </style>
+  <style id="manager-ui-refine-v2">
+    :root{
+      --mgr-bg-0:#f4f7fc;
+      --mgr-bg-1:#ffffff;
+      --mgr-bg-2:#f1f5ff;
+      --mgr-border:#dbe5f1;
+      --mgr-text-1:#0f172a;
+      --mgr-text-2:#334155;
+      --mgr-text-3:#64748b;
+      --mgr-brand:#5b3df5;
+      --mgr-brand-600:#4a2edb;
+      --mgr-danger:#b91c1c;
+      --mgr-danger-bg:#fee2e2;
+      --mgr-shadow:0 10px 28px rgba(15,23,42,0.07);
+    }
+
+    body{
+      background:var(--mgr-bg-0);
+      color:var(--mgr-text-1);
+    }
+    .hero{
+      background:linear-gradient(120deg,#4f46e5 0%,#6d28d9 56%,#7c3aed 100%);
+      position:relative;
+    }
+    .hero::after{
+      content:"";
+      position:absolute;
+      left:0;
+      right:0;
+      bottom:-1px;
+      height:40px;
+      background:linear-gradient(180deg,rgba(244,247,252,0),var(--mgr-bg-0));
+      pointer-events:none;
+    }
+
+    .tabs .tab{
+      border:1px solid rgba(255,255,255,.36);
+      background:rgba(255,255,255,.14);
+    }
+    .tabs .tab.active{
+      background:#fff;
+      color:#1e1b4b;
+      box-shadow:0 6px 16px rgba(15,23,42,.18);
+    }
+    .reviewBtn{
+      background:#fff;
+      color:#1e1b4b;
+    }
+
+    .cards .card,
+    .toolbar,
+    .tableWrap{
+      background:var(--mgr-bg-1);
+      border:1px solid var(--mgr-border);
+      box-shadow:var(--mgr-shadow);
+    }
+    .cards .card{
+      border-radius:14px;
+    }
+    .card h3{color:var(--mgr-text-2);}
+    .card .label{color:var(--mgr-text-3);}
+    .card .value{color:var(--mgr-text-1);}
+
+    .toolbar{
+      gap:8px;
+      border-radius:14px;
+      top:12px;
+    }
+    .input,.select,.pill{
+      border-color:var(--mgr-border);
+      color:var(--mgr-text-2);
+    }
+    .input::placeholder{color:#94a3b8;}
+
+    .btn{
+      border:1px solid var(--mgr-border);
+      border-radius:10px;
+      font-weight:800;
+      background:#fff;
+      color:var(--mgr-text-2);
+      transition:background .16s ease,border-color .16s ease,transform .16s ease;
+    }
+    .btn:hover{background:var(--mgr-bg-2);}
+    .btn:active{transform:translateY(1px);}
+    .btn.primary{
+      background:linear-gradient(135deg,var(--mgr-brand),var(--mgr-brand-600));
+      border-color:transparent;
+      color:#fff;
+    }
+    .btn.ghost,.btn.yellow,.btn.dark,.btn.green{
+      background:#fff;
+      color:var(--mgr-text-2);
+      border-color:var(--mgr-border);
+    }
+    .btn.danger-light{
+      background:var(--mgr-danger-bg);
+      border-color:#fecaca;
+      color:var(--mgr-danger);
+    }
+    .btn.danger-deep{
+      background:var(--mgr-danger);
+      border-color:var(--mgr-danger);
+      color:#fff;
+    }
+    #btnBulkCycle{
+      background:#ede9fe;
+      border-color:#ddd6fe;
+      color:#5b21b6;
+    }
+
+    .word-card,
+    .sentence-card{
+      border:1px solid var(--mgr-border);
+      border-radius:14px;
+      box-shadow:none;
+      background:var(--mgr-bg-1);
+    }
+    .word-card:hover,
+    .sentence-card:hover{
+      background:#fbfdff;
+    }
+    .word-title,.sentence-text{color:var(--mgr-text-1);}
+    .word-meaning,.sentence-translation{color:var(--mgr-text-2);}
+    .sentence-translation{opacity:.95;}
+    .word-meta-line,.sentence-meta,.muted,.small{color:var(--mgr-text-3);}
+    .word-note,.sentence-note{color:#6d28d9;}
+
+    .word-card-row,
+    .sentence-card-row{
+      align-items:flex-start;
+    }
+    .word-actions .iconBtn,
+    .sentence-actions .iconBtn{
+      opacity:.96;
+    }
+    .word-actions .iconBtn:hover,
+    .sentence-actions .iconBtn:hover{
+      transform:translateY(-1px);
+    }
+
+    .st{
+      border:1px solid transparent;
+      font-size:11px;
+      letter-spacing:.1px;
+    }
+
+    @media (prefers-color-scheme: dark){
+      :root{
+        --mgr-bg-0:#070a1b;
+        --mgr-bg-1:#0f1733;
+        --mgr-bg-2:#172345;
+        --mgr-border:#2d3a64;
+        --mgr-text-1:#e7eeff;
+        --mgr-text-2:#c7d3f2;
+        --mgr-text-3:#97a8d4;
+        --mgr-brand:#7a6bff;
+        --mgr-brand-600:#6554f3;
+        --mgr-danger:#ef4444;
+        --mgr-danger-bg:#3a1823;
+        --mgr-shadow:0 14px 30px rgba(0,0,0,.34);
+      }
+      .hero{
+        background:linear-gradient(120deg,#3f247e 0%,#35236f 52%,#202252 100%);
+      }
+      .hero::after{
+        background:linear-gradient(180deg,rgba(7,10,27,0),var(--mgr-bg-0));
+      }
+      .cards .card{
+        background:#121b38;
+      }
+      .word-card:hover,.sentence-card:hover{
+        background:#132046;
+      }
+      .btn.ghost,.btn.yellow,.btn.dark,.btn.green{
+        background:#141d3d;
+      }
+      #btnBulkCycle{
+        background:#2b2351;
+        border-color:#4d3f80;
+        color:#ddd6fe;
+      }
+    }
+
+    body.vb-force-dark{
+      --mgr-bg-0:#070a1b;
+      --mgr-bg-1:#0f1733;
+      --mgr-bg-2:#172345;
+      --mgr-border:#2d3a64;
+      --mgr-text-1:#e7eeff;
+      --mgr-text-2:#c7d3f2;
+      --mgr-text-3:#97a8d4;
+      --mgr-brand:#7a6bff;
+      --mgr-brand-600:#6554f3;
+      --mgr-danger:#ef4444;
+      --mgr-danger-bg:#3a1823;
+      --mgr-shadow:0 14px 30px rgba(0,0,0,.34);
+      background:var(--mgr-bg-0);
+      color:var(--mgr-text-1);
+    }
+    body.vb-force-dark .hero{
+      background:linear-gradient(120deg,#3f247e 0%,#35236f 52%,#202252 100%);
+    }
+    body.vb-force-dark .hero::after{
+      background:linear-gradient(180deg,rgba(7,10,27,0),var(--mgr-bg-0));
+    }
+    body.vb-force-dark .cards .card{background:#121b38;}
+    body.vb-force-dark .word-card:hover,
+    body.vb-force-dark .sentence-card:hover{background:#132046;}
+    body.vb-force-dark .btn.ghost,
+    body.vb-force-dark .btn.yellow,
+    body.vb-force-dark .btn.dark,
+    body.vb-force-dark .btn.green{background:#141d3d;}
+    body.vb-force-dark #btnBulkCycle{
+      background:#2b2351;
+      border-color:#4d3f80;
+      color:#ddd6fe;
+    }
+
+    /* ===== Fix Pack: sentence cards + toolbar (CSS only) ===== */
+    #sentCards .sentence-card{
+      padding:14px 16px;
+    }
+    #sentCards .sentence-card-row{
+      align-items:center;
+    }
+    #sentCards .sentence-main{
+      padding-right:8px;
+      min-width:0;
+    }
+    #sentCards .sentence-actions{
+      flex:0 0 164px;
+      width:164px;
+      margin-left:8px;
+      display:grid;
+      grid-template-columns:112px 36px;
+      align-items:center;
+      justify-content:end;
+      gap:10px;
+    }
+    #sentCards .sentence-actions .sentence-side-actions{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:10px;
+    }
+    #sentCards .sentence-actions .sentence-export-btn{
+      width:112px;
+      min-height:86px;
+      height:86px;
+      border-radius:10px;
+      padding:8px 10px;
+      display:inline-flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      gap:8px;
+      border:1px solid #bfdbfe;
+      background:#dbeafe;
+      color:#1e3a8a;
+      font-weight:900;
+      font-size:11px;
+      line-height:1;
+    }
+    #sentCards .sentence-actions .sentence-export-btn::before{
+      display:none;
+    }
+    #sentCards .sentence-actions .iconBtn{
+      width:36px;
+      height:36px;
+    }
+    #toolbarWords,
+    #toolbarSentences{
+      align-items:center;
+      gap:10px;
+    }
+    #toolbarWords .input, #toolbarSentences .input,
+    #toolbarWords .select, #toolbarSentences .select,
+    #toolbarWords .btn, #toolbarSentences .btn{
+      height:46px;
+      box-sizing:border-box;
+    }
+
+    #toolbarWords .pill,
+    #toolbarSentences .pill{
+      flex:0 0 auto;
+      white-space:nowrap;
+    }
+    #toolbarWords .pill label,
+    #toolbarSentences .pill label{
+      white-space:nowrap;
+    }
+
+    #sortDir, #sortSentenceDir{
+      min-width:92px;
+    }
+    #btnImport, #btnExport, #btnImportSent, #btnExportSent{
+      min-width:92px;
+    }
+    #btnExportSent.export-core-btn{
+      min-width:138px;
+      box-shadow:0 8px 20px rgba(79,70,229,.22);
+    }
+
+    #btnClearWords, #btnClearSentences{
+      margin-left:12px;
+    }
+    #btnRefresh, #btnRefresh2{
+      margin-left:8px;
+    }
+
+    #btnBulkCycle{
+      background:#ede9fe;
+      border-color:#ddd6fe;
+      color:#5b21b6;
+    }
+    #btnBulkDelete, #btnBulkDeleteSent{
+      background:#fff1f2;
+      border-color:#fecdd3;
+      color:#be123c;
+    }
+
+    /* Toast (used by guardFeature / showManagerToast) */
+    #managerToastHost{
+      position:fixed;
+      right:16px;
+      bottom:16px;
+      z-index:2147483647;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      pointer-events:none;
+    }
+    .manager-toast{
+      max-width:min(420px, calc(100vw - 32px));
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid #fecaca;
+      background:#7f1d1d;
+      color:#fff;
+      box-shadow:0 10px 24px rgba(15,23,42,.25);
+      opacity:0;
+      transform:translateY(8px);
+      transition:opacity .2s ease, transform .2s ease;
+      font-size:13px;
+      line-height:1.35;
+      font-weight:700;
+    }
+    .manager-toast.is-anchor{
+      position:fixed;
+      z-index:2147483647;
+      max-width:min(320px, calc(100vw - 16px));
+    }
+    .manager-toast.show{
+      opacity:1;
+      transform:translateY(0);
+    }
+    .manager-toast.success{
+      border-color:#86efac;
+      background:#166534;
+    }
+    .manager-toast.error{
+      border-color:#fecaca;
+      background:#7f1d1d;
+    }
+
+    @media (prefers-color-scheme: dark){
+      .manager-toast{
+        box-shadow:0 12px 30px rgba(0,0,0,.42);
+      }
+      .manager-toast.error{
+        border-color:#fca5a5;
+        background:#991b1b;
+      }
+      .manager-toast.success{
+        border-color:#86efac;
+        background:#15803d;
+      }
+    }
+
+    body.vb-force-dark .manager-toast{
+      box-shadow:0 12px 30px rgba(0,0,0,.42);
+    }
+    body.vb-force-dark .manager-toast.error{
+      border-color:#fca5a5;
+      background:#991b1b;
+    }
+    body.vb-force-dark .manager-toast.success{
+      border-color:#86efac;
+      background:#15803d;
+    }
+
+    /* ===== Refinement: single-surface header + no horizontal toolbar scroll ===== */
+    html, body{
+      overflow-x:hidden;
+    }
+    .hero{
+      box-shadow:none;
+      border-bottom:0;
+    }
+    .hero::after{
+      height:16px;
+      background:linear-gradient(180deg, rgba(244,247,252,0.08), var(--mgr-bg-0));
+    }
+    .hero + .container{
+      padding-top:10px;
+    }
+    @media (prefers-color-scheme: dark){
+      .hero::after{
+        background:linear-gradient(180deg, rgba(7,10,27,0.06), var(--mgr-bg-0));
+      }
+    }
+    body.vb-force-dark .hero::after{
+      background:linear-gradient(180deg, rgba(7,10,27,0.06), var(--mgr-bg-0));
+    }
+
+    #toolbarWords,
+    #toolbarSentences{
+      flex-wrap:wrap;
+      overflow-x:clip;
+      row-gap:10px;
+      column-gap:10px;
+    }
+    #toolbarWords .searchPopoverWrap,
+    #toolbarSentences .searchPopoverWrap{
+      flex:1 1 320px;
+      min-width:220px;
+      max-width:560px;
+    }
+    #toolbarWords .toolbar-right,
+    #toolbarSentences .toolbar-right{
+      flex:0 1 auto;
+      min-width:0;
+      margin-left:auto;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      row-gap:8px;
+    }
+    #toolbarWords .pill,
+    #toolbarSentences .pill{
+      max-width:100%;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    #toolbarWords .pill label,
+    #toolbarSentences .pill label{
+      white-space:nowrap;
+    }
+
+    /* ===== Final polish: remove split glow + stabilize toolbar rhythm ===== */
+    .hero::after{
+      height:0;
+      background:none;
+    }
+    .hero + .container{
+      padding-top:14px;
+    }
+    .titleLine{
+      gap:8px;
+    }
+    .verInline{
+      font-size:12px;
+      opacity:.82;
+    }
+    .tagline{
+      font-size:13px;
+      opacity:.92;
+    }
+    .brandSignature{
+      font-size:12px;
+      letter-spacing:1.1px;
+      opacity:.8;
+    }
+
+    #toolbarWords,
+    #toolbarSentences{
+      padding:10px;
+      gap:8px;
+      row-gap:8px;
+      border-radius:12px;
+    }
+    #toolbarWords .input, #toolbarSentences .input,
+    #toolbarWords .select, #toolbarSentences .select,
+    #toolbarWords .btn, #toolbarSentences .btn{
+      height:42px;
+      padding:8px 10px;
+      font-size:13px;
+      border-radius:10px;
+    }
+    #toolbarWords .searchPopoverWrap,
+    #toolbarSentences .searchPopoverWrap{
+      flex:1 1 260px;
+      min-width:200px;
+      max-width:340px;
+    }
+    #toolbarWords .select,
+    #toolbarSentences .select{
+      min-width:94px;
+    }
+    #sortDir, #sortSentenceDir{
+      min-width:74px;
+    }
+    #btnImport, #btnExport, #btnImportSent, #btnExportSent{
+      min-width:66px;
+    }
+    #btnExportSent.export-core-btn{
+      min-width:132px !important;
+    }
+    #toolbarWords .toolbar-right,
+    #toolbarSentences .toolbar-right{
+      flex-wrap:nowrap;
+      gap:8px;
+      row-gap:0;
+    }
+    #toolbarWords .pill,
+    #toolbarSentences .pill{
+      padding:6px 8px;
+      border-radius:999px;
+    }
+    #toolbarWords .pill label,
+    #toolbarSentences .pill label{
+      font-size:13px;
+      line-height:1.1;
+    }
+    #toolbarWords .pill label + label,
+    #toolbarSentences .pill label + label{
+      margin-left:6px !important;
+    }
+
+    #wordsWrap .word-card{
+      border-radius:12px;
+    }
+    #wordsWrap .word-card-row{
+      align-items:center;
+    }
+    #wordsWrap .word-main{
+      gap:10px;
+    }
+    #wordsWrap .word-meta{
+      gap:4px;
+    }
+    #wordsWrap .word-actions{
+      width:64px;
+      flex:0 0 64px;
+      gap:6px;
+      align-items:center;
+    }
+    #wordsWrap .word-actions .iconBtn{
+      width:38px;
+      height:38px;
+    }
+
+    /* ===== Requested tweaks: compact search + sticky action bar ===== */
+    #toolbarWords .searchPopoverWrap,
+    #toolbarSentences .searchPopoverWrap{
+      flex:0 0 170px !important;
+      min-width:170px !important;
+      max-width:170px !important;
+    }
+    #toolbarWords .pill[title="全选"],
+    #toolbarSentences .pill[title="全选"]{
+      min-width:54px;
+      justify-content:center;
+      padding-left:8px;
+      padding-right:8px;
+    }
+    #toolbarWords{
+      position:sticky !important;
+      top:0 !important;
+      z-index:2500;
+    }
+    @media (max-width:760px){
+      #toolbarWords .searchPopoverWrap,
+      #toolbarSentences .searchPopoverWrap{
+        flex:1 1 42vw !important;
+        min-width:150px !important;
+        max-width:42vw !important;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="export-card.css" />
 </head>
 <body>
   <div class="hero">
@@ -235,8 +968,9 @@
       <h1 class="titleWrap">
         <img src="logo.png" class="appLogo" alt="logo" onerror="this.onerror=null;this.src='icon128.png';" />
         <span class="titleText">
-          <span class="titleLine">全能英语单词本 <span class="sub">PRO</span><span id="ver" class="verInline"></span></span>
+          <span class="titleLine">霍德英语学习管家<span id="ver" class="verInline"></span></span>
           <span id="limitInfo" class="tagline">Personal English Asset System</span>
+          <span class="brandSignature">Own Your Words.</span>
         </span>
       </h1>
 
@@ -253,8 +987,8 @@
 
       <div class="tabsBar">
         <div class="tabs">
-          <button class="tab active" id="tabWords">📚 单词管理</button>
-          <button class="tab" id="tabSentences">💬 收藏金句</button>
+          <button class="tab active" id="tabWords">📚 管理单词本</button>
+          <button class="tab" id="tabSentences">✨ 收藏金句库</button>
         </div>
         <button class="reviewBtn" id="btnStartReview">🧠 艾宾浩斯复习</button>
       </div>
@@ -267,9 +1001,9 @@
     </div>
 
     <div class="toolbar" id="toolbarWords">
-      <label class="pill"><input type="checkbox" id="checkAll"> 全选</label>
+      <label class="pill" title="全选"><input type="checkbox" id="checkAll" aria-label="全选"></label>
 
-      <input class="input searchInput" id="search" placeholder="搜索" />
+      <div class="searchPopoverWrap"><input class="input searchInput" id="search" placeholder="搜索" /></div>
 
       <select class="select" id="sortField">
         <option value="time">按时间</option>
@@ -278,10 +1012,10 @@
         <option value="count">按学习次数</option>
         <option value="mastery">按掌握度</option>
       </select>
-      <button class="btn ghost" id="sortDir">⬆︎ 正序</button>
+      <button class="btn ghost" id="sortDir">⬇️ 倒序</button>
 
-      <button class="btn ghost" id="btnImport">⬇️ 导入</button>
-      <button class="btn ghost" id="btnExport">⬆️ 导出</button>
+      <button class="btn ghost" id="btnImport">导入</button>
+      <button class="btn ghost" id="btnExport">导出</button>
       <div class="pill">
         <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="toggleCn" checked> 中文释义</label>
         <label style="display:flex;align-items:center;gap:6px;margin-left:8px;"><input type="checkbox" id="toggleEn"> 英文释义</label>
@@ -292,7 +1026,7 @@
         <button class="btn green" id="btnBulkCycle">批量切换状态</button>
         <button class="btn danger-light" id="btnBulkDelete">批量删除</button>
         <button class="btn danger-deep" id="btnClearWords">清空</button>
-        <button class="btn primary" id="btnRefresh">🔄 刷新</button>
+        <button class="btn primary" id="btnRefresh">刷新</button>
       </div>
     </div>
 
@@ -302,16 +1036,16 @@
     </div>
 
     <div class="toolbar" id="toolbarSentences" style="display:none;">
-      <label class="pill"><input type="checkbox" id="checkAllSent"> 全选</label>
-      <input class="input searchInput" id="searchSentence" placeholder="搜索" />
+      <label class="pill" title="全选"><input type="checkbox" id="checkAllSent" aria-label="全选"></label>
+      <div class="searchPopoverWrap"><input class="input searchInput" id="searchSentence" placeholder="搜索" /></div>
       <select class="select" id="sortSentenceField">
         <option value="time">按时间</option>
         <option value="alpha">按字母</option>
         <option value="length">按长度</option>
       </select>
-      <button class="btn ghost" id="sortSentenceDir">⬆︎ 正序</button>
-      <button class="btn ghost" id="btnImportSent">⬇️ 导入金句</button>
-      <button class="btn ghost" id="btnExportSent">⬆️ 导出金句</button>
+      <button class="btn ghost" id="sortSentenceDir">⬇️ 倒序</button>
+      <button class="btn ghost" id="btnImportSent">导入金句</button>
+      <button class="btn primary export-core-btn" id="btnExportSent">导出图片</button>
       <div class="pill">
         <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="toggleSentTrans" checked> 翻译</label>
         <label style="display:flex;align-items:center;gap:6px;margin-left:8px;"><input type="checkbox" id="toggleSentNote" checked> 批注</label>
@@ -319,7 +1053,7 @@
       <div class="toolbar-right">
         <button class="btn danger-light" id="btnBulkDeleteSent">批量删除</button>
         <button class="btn danger-deep" id="btnClearSentences">清空</button>
-        <button class="btn primary" id="btnRefresh2">🔄 刷新</button>
+        <button class="btn primary" id="btnRefresh2">刷新</button>
       </div>
     </div>
 
@@ -377,6 +1111,198 @@
     </div>
   </div>
 
+  <div class="quoteModalMask" id="quoteExportMask">
+    <div class="quoteModal saasQuoteModal">
+      <div class="quoteModalHd">
+        <div>导出金句卡片</div>
+        <button class="btn ghost" id="quoteExportClose" style="padding:8px 10px;">✕</button>
+      </div>
+      <div class="quoteModalBd">
+        <div class="quoteSettings">
+          <div class="quoteQuick">
+            <div class="quoteSectionTitle">基础设置</div>
+            <div class="quoteField">
+              <label for="quotePreset">快捷预设</label>
+              <select class="select quoteSelect" id="quotePreset">
+                <option value="">不使用预设</option>
+                <option value="study">学习打卡</option>
+                <option value="social">社媒发布</option>
+                <option value="minimal">极简收藏</option>
+              </select>
+            </div>
+            <div class="quoteField">
+              <label for="quoteTemplate">模板</label>
+              <select class="select quoteSelect" id="quoteTemplate">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="hordSignature">HORD Signature</option>
+                <option value="editorial">Editorial</option>
+                <option value="gradientSoft">Gradient Soft</option>
+                <option value="boldImpact">Bold Impact</option>
+                <option value="letterClassic">Letter Classic</option>
+                <option value="parchment">Parchment</option>
+                <option value="inkJournal">Ink Journal</option>
+                <option value="typewriter">Typewriter</option>
+              </select>
+            </div>
+            <div class="quoteTemplateWall" id="quoteTemplateWall">
+              <button class="quoteTplThumb" data-template="light">Light</button>
+              <button class="quoteTplThumb" data-template="dark">Dark</button>
+              <button class="quoteTplThumb" data-template="hordSignature">HORD Signature</button>
+              <button class="quoteTplThumb" data-template="editorial">Editorial</button>
+              <button class="quoteTplThumb" data-template="gradientSoft">Gradient Soft</button>
+              <button class="quoteTplThumb" data-template="boldImpact">Bold Impact</button>
+              <button class="quoteTplThumb" data-template="letterClassic">Letter Classic</button>
+              <button class="quoteTplThumb" data-template="parchment">Parchment</button>
+              <button class="quoteTplThumb" data-template="inkJournal">Ink Journal</button>
+              <button class="quoteTplThumb" data-template="typewriter">Typewriter</button>
+            </div>
+            <div class="quoteField">
+              <label for="quoteRatio">比例</label>
+              <select class="select quoteSelect" id="quoteRatio">
+                <option value="4:5">4:5 (1080×1350)</option>
+                <option value="1:1">1:1 (1080×1080)</option>
+                <option value="9:16">9:16 (1080×1920)</option>
+                <option value="16:9">16:9 (1280×720)</option>
+                <option value="3:4">3:4 (900×1200)</option>
+              </select>
+            </div>
+            <div class="quoteField">
+              <label for="quoteDensity">行宽密度</label>
+              <select class="select quoteSelect" id="quoteDensity">
+                <option value="compact">紧凑</option>
+                <option value="standard">标准</option>
+                <option value="airy">舒展</option>
+              </select>
+            </div>
+            <div class="quoteField">
+              <label for="quoteMainFont">主句字体</label>
+              <select class="select quoteSelect" id="quoteMainFont">
+                <option value="inter">Inter</option>
+                <option value="playfair">Playfair Display</option>
+                <option value="garamond">EB Garamond</option>
+                <option value="lora">Lora</option>
+              </select>
+            </div>
+            <div class="quoteField">
+              <label for="quoteCjkFont">中文字体</label>
+              <select class="select quoteSelect" id="quoteCjkFont">
+                <option value="notoSansSC">Noto Sans SC</option>
+                <option value="notoSerifSC">Noto Serif SC</option>
+                <option value="lxgwWenKai">LXGW WenKai</option>
+              </select>
+            </div>
+            <div class="quoteField">
+              <label for="quoteFontAdjust">字号微调 <span id="quoteFontAdjustValue">0</span></label>
+              <input id="quoteFontAdjust" type="range" min="-8" max="8" step="1" value="0" />
+            </div>
+            <div class="quoteQuickActions">
+              <button class="btn ghost" type="button" id="quoteQuickCopy">快速复制</button>
+              <button class="btn primary" type="button" id="quoteQuickExport">快速导出</button>
+            </div>
+          </div>
+
+          <div class="quoteAdvanced">
+            <div class="quoteSection">
+              <div class="quoteSectionTitle">内容设置</div>
+              <div class="quoteChecks">
+                <label><input type="checkbox" id="quoteShowTranslation" checked> 显示翻译</label>
+                <label><input type="checkbox" id="quoteShowSource" checked> 显示来源</label>
+                <label><input type="checkbox" id="quoteShowAnnotation"> 显示批注</label>
+                <label><input type="checkbox" id="quoteShowWatermark" checked> 显示水印</label>
+              </div>
+              <div class="quoteField">
+                <label for="quoteAnnotationStyle">批注样式</label>
+                <select class="select quoteSelect" id="quoteAnnotationStyle">
+                  <option value="normal">普通</option>
+                  <option value="emphasis">强调（引号+底纹）</option>
+                </select>
+              </div>
+              <div class="quoteField">
+                <label for="quoteEnhanceContent">单条内容增强</label>
+                <label><input type="checkbox" id="quoteEnhanceContent" checked> 自动清洗空白、优化来源展示与换行稳定性</label>
+              </div>
+              <div class="quoteField">
+                <label for="quoteSourceOverride">来源文本</label>
+                <div class="quoteInlineAction">
+                  <input class="input quoteTextInput" id="quoteSourceOverride" placeholder="可手动覆盖来源，如 nytimes.com/world" />
+                  <button class="btn ghost" type="button" id="quoteRestoreSource">恢复</button>
+                </div>
+              </div>
+              <div class="quoteField">
+                <label for="quoteAnnotationOverride">批注文本</label>
+                <div class="quoteInlineAction">
+                  <textarea id="quoteAnnotationOverride" class="quoteTextArea" rows="6" placeholder="可手动编辑导出批注，不会改动原始金句数据"></textarea>
+                  <button class="btn ghost" type="button" id="quoteRestoreAnnotation">恢复</button>
+                </div>
+                <div class="quoteHint" id="quoteAnnotationMeta">批注预估：-</div>
+              </div>
+            </div>
+
+            <details class="quoteSection quoteOptionalSection">
+              <summary>导出与收藏（高级）</summary>
+              <div class="quoteField">
+                <label for="quoteWatermarkMode">水印模式</label>
+                <select class="select quoteSelect" id="quoteWatermarkMode">
+                  <option value="signature">signature</option>
+                  <option value="cornerLogo">cornerLogo</option>
+                  <option value="backgroundLogo">backgroundLogo</option>
+                </select>
+              </div>
+              <div class="quoteProHint" id="quoteProHint"></div>
+              <div class="quoteField">
+                <label for="quoteFavoritePreset">模板收藏</label>
+                <select class="select quoteSelect" id="quoteFavoritePreset">
+                  <option value="">选择收藏...</option>
+                </select>
+                <div class="quoteFavActions">
+                  <button class="btn ghost" id="quoteSaveFavorite" type="button">收藏当前</button>
+                  <button class="btn ghost" id="quoteApplyFavorite" type="button">应用收藏</button>
+                  <button class="btn ghost" id="quoteDeleteFavorite" type="button">删除收藏</button>
+                </div>
+              </div>
+              <div class="quoteField">
+                <label for="quoteFilenamePattern">文件名规则</label>
+                <input class="input quoteTextInput" id="quoteFilenamePattern" placeholder="hord-{date}-{template}-{ratio}" />
+              </div>
+              <div class="quoteHint">支持变量：{date} {time} {datetime} {template} {ratio} {index}</div>
+            </details>
+
+            <div class="quoteHint" id="quoteCurrentText">-</div>
+          </div>
+        </div>
+        <div class="quotePreviewArea">
+          <div class="quotePreviewTop">
+            <div class="quoteQualityHint" id="quoteQualityHint"></div>
+            <div class="quotePreviewControls">
+              <label for="quotePreviewScale">预览</label>
+              <select class="select quotePreviewScale" id="quotePreviewScale">
+                <option value="fit">适配</option>
+                <option value="0.75">75%</option>
+                <option value="1">100%</option>
+                <option value="1.25">125%</option>
+              </select>
+            </div>
+          </div>
+          <div class="quotePreviewStage" id="quotePreviewStage">
+            <div class="quotePreviewWrap">
+              <canvas id="quotePreviewCanvas" class="quotePreviewCanvas"></canvas>
+            </div>
+          </div>
+          <div class="quoteHint">预览仅示意排版，导出图始终使用原始分辨率。</div>
+          <div class="quoteHint">快捷键：←/→ 切模板，Enter 导出，Shift+Enter 复制。</div>
+        </div>
+      </div>
+      <div class="quoteModalFt">
+        <button class="btn ghost" id="quoteExportCancel">取消</button>
+        <button class="btn ghost" id="quoteCopyImage">复制图片</button>
+        <button class="btn ghost" id="quoteBatchExport">批量导出</button>
+        <button class="btn primary" id="quoteExportSubmit">导出 PNG</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="export-card.js"></script>
   <script src="manager.js"></script>
 </body>
 </html>

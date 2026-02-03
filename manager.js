@@ -1,8 +1,32 @@
-// Personal English Asset System - Manager
+// 霍德英语学习管家 - Manager
 // Stable manager script: reads DB via background OP_GET_STATE (single source of truth)
 
 (async function(){
   'use strict';
+
+  function systemDark(){
+    try{ return !!window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches; }catch(_){ return false; }
+  }
+
+  function resolveThemeMode(db){
+    if(db && (db.themeMode === 'auto' || db.themeMode === 'light' || db.themeMode === 'dark')) return db.themeMode;
+    const autoMode = db?.theme_auto_mode !== false;
+    const manualDark = db?.theme_dark_mode != null ? !!db.theme_dark_mode : !!db?.popup_force_dark;
+    if(autoMode) return 'auto';
+    return manualDark ? 'dark' : 'light';
+  }
+
+  function computeThemeDark(db){
+    const mode = resolveThemeMode(db || {});
+    return mode === 'dark' || (mode === 'auto' && systemDark());
+  }
+
+  function applyPageTheme(db){
+    const dark = computeThemeDark(db || {});
+    document.documentElement.classList.toggle('vb-dark', dark);
+    document.body.classList.toggle('vb-force-dark', dark);
+  }
+
 
   // --- Version self-check log ---
   try {
@@ -13,6 +37,25 @@
     if (verEl) verEl.textContent = `v${v}`;
     if (limitEl) limitEl.textContent = 'Personal English Asset System';
   } catch(e) {}
+
+  applyPageTheme({});
+  try{
+    chrome.storage.local.get(['themeMode','theme_auto_mode','theme_dark_mode','popup_force_dark'], applyPageTheme);
+    chrome.storage.onChanged.addListener((changes, area)=>{
+      if(area !== 'local') return;
+      if(!changes.themeMode && !changes.theme_auto_mode && !changes.theme_dark_mode && !changes.popup_force_dark) return;
+      chrome.storage.local.get(['themeMode','theme_auto_mode','theme_dark_mode','popup_force_dark'], applyPageTheme);
+    });
+    chrome.runtime.onMessage.addListener((msg)=>{
+      if(msg && msg.type === 'THEME_UPDATED'){
+        chrome.storage.local.get(['themeMode','theme_auto_mode','theme_dark_mode','popup_force_dark'], applyPageTheme);
+      }
+    });
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onSystemTheme = ()=>chrome.storage.local.get(['themeMode','theme_auto_mode','theme_dark_mode','popup_force_dark'], applyPageTheme);
+    if(mq.addEventListener) mq.addEventListener('change', onSystemTheme);
+    else if(mq.addListener) mq.addListener(onSystemTheme);
+  }catch(_){/* ignore */}
 
   // Extension version (for export meta / UI)
   // In extension pages (manager.html), chrome.runtime.getManifest() is available.
@@ -82,10 +125,52 @@
     ioError: $('ioError'),
     btnCancel: $('btnCancel'),
     btnOk: $('btnOk'),
+
+    quoteExportMask: $('quoteExportMask'),
+    quoteExportClose: $('quoteExportClose'),
+    quoteExportCancel: $('quoteExportCancel'),
+    quoteQuickCopy: $('quoteQuickCopy'),
+    quoteQuickExport: $('quoteQuickExport'),
+    quoteCopyImage: $('quoteCopyImage'),
+    quoteBatchExport: $('quoteBatchExport'),
+    quoteExportSubmit: $('quoteExportSubmit'),
+    quotePreset: $('quotePreset'),
+    quoteTemplate: $('quoteTemplate'),
+    quoteTemplateWall: $('quoteTemplateWall'),
+    quoteRatio: $('quoteRatio'),
+    quoteDensity: $('quoteDensity'),
+    quoteMainFont: $('quoteMainFont'),
+    quoteCjkFont: $('quoteCjkFont'),
+    quoteFontAdjust: $('quoteFontAdjust'),
+    quoteFontAdjustValue: $('quoteFontAdjustValue'),
+    quoteEnhanceContent: $('quoteEnhanceContent'),
+    quoteFavoritePreset: $('quoteFavoritePreset'),
+    quoteSaveFavorite: $('quoteSaveFavorite'),
+    quoteApplyFavorite: $('quoteApplyFavorite'),
+    quoteDeleteFavorite: $('quoteDeleteFavorite'),
+    quoteShowTranslation: $('quoteShowTranslation'),
+    quoteShowSource: $('quoteShowSource'),
+    quoteShowAnnotation: $('quoteShowAnnotation'),
+    quoteAnnotationStyle: $('quoteAnnotationStyle'),
+    quoteShowWatermark: $('quoteShowWatermark'),
+    quoteWatermarkMode: $('quoteWatermarkMode'),
+    quoteProHint: $('quoteProHint'),
+    quoteSourceOverride: $('quoteSourceOverride'),
+    quoteRestoreSource: $('quoteRestoreSource'),
+    quoteAnnotationOverride: $('quoteAnnotationOverride'),
+    quoteRestoreAnnotation: $('quoteRestoreAnnotation'),
+    quoteAnnotationMeta: $('quoteAnnotationMeta'),
+    quoteFilenamePattern: $('quoteFilenamePattern'),
+    quotePreviewScale: $('quotePreviewScale'),
+    quotePreviewStage: $('quotePreviewStage'),
+    quotePreviewCanvas: $('quotePreviewCanvas'),
+    quoteCurrentText: $('quoteCurrentText'),
+    quoteQualityHint: $('quoteQualityHint'),
   };
 
   const state = {
     db: null,
+    entitlements: null,
     tab: 'words',
     selectedWords: new Set(),
     selectedSent: new Set(),
@@ -94,7 +179,575 @@
     viewFlags: {cn:true,en:false,note:true},
     sentViewFlags: {translation:true,note:true},
     cardView: {},
+    lockWordOrder: false,
+    frozenWordOrder: [],
+    quoteExport: null,
+    quoteExportSentenceId: null,
+    pendingQuoteExport: null,
   };
+
+  function getInitialTabFromUrl(){
+    try{
+      const q = new URLSearchParams(String(location.search || ''));
+      const tab = String(q.get('tab') || '').trim().toLowerCase();
+      if(tab === 'sentences' || tab === 'quotes') return 'sentences';
+      if(tab === 'words') return 'words';
+      const hash = String(location.hash || '').replace(/^#/, '').trim().toLowerCase();
+      if(hash === 'sentences' || hash === 'quotes') return 'sentences';
+      if(hash === 'words') return 'words';
+    }catch(_){/* ignore */}
+    return 'words';
+  }
+  state.tab = getInitialTabFromUrl();
+
+  function getPendingQuoteExportFromUrl(){
+    try{
+      const q = new URLSearchParams(String(location.search || ''));
+      const shouldOpen = ['1', 'true', 'yes'].includes(String(q.get('quoteExport') || '').trim().toLowerCase());
+      if(!shouldOpen) return null;
+      const quoteId = Number(q.get('quoteId') || 0);
+      return {
+        quoteId: Number.isFinite(quoteId) && quoteId > 0 ? quoteId : null,
+      };
+    }catch(_){
+      return null;
+    }
+  }
+  state.pendingQuoteExport = getPendingQuoteExportFromUrl();
+
+  const FREE_ENTITLEMENTS = Object.freeze({
+    word_limit: 200,
+    note_limit: 10,
+    import_export: false,
+    bulk_edit: false,
+    review_mode: 'basic',
+    quote_export_enabled: true,
+    quote_templates: ['light'],
+    quote_advanced_settings: false,
+  });
+
+  function normalizeEntitlements(raw){
+    const out = { ...FREE_ENTITLEMENTS, ...(raw && typeof raw === 'object' ? raw : {}) };
+    out.import_export = !!out.import_export;
+    out.bulk_edit = !!out.bulk_edit;
+    out.review_mode = String(out.review_mode || 'basic') === 'advanced' ? 'advanced' : 'basic';
+    out.quote_export_enabled = out.quote_export_enabled !== false;
+    out.quote_advanced_settings = !!out.quote_advanced_settings;
+    out.quote_templates = Array.isArray(out.quote_templates) ? out.quote_templates.map(x=>String(x||'').trim()).filter(Boolean) : FREE_ENTITLEMENTS.quote_templates.slice();
+    if(!out.quote_templates.length) out.quote_templates = FREE_ENTITLEMENTS.quote_templates.slice();
+    return out;
+  }
+
+  function getEntitlements(){
+    return normalizeEntitlements(state.entitlements);
+  }
+
+  function guardFeature(enabled, message, anchorEl=null){
+    if(enabled) return true;
+    showManagerToast(message || '该功能仅专业版可用。', 'error', { anchorEl });
+    return false;
+  }
+
+  function clearWordOrderLock(){
+    state.lockWordOrder = false;
+    state.frozenWordOrder = [];
+  }
+
+  function getCurrentWordOrderFromDom(){
+    if(!el.wordCards) return [];
+    return Array.from(el.wordCards.querySelectorAll('.word-card[data-word]'))
+      .map(node => node.getAttribute('data-word') || '')
+      .filter(Boolean);
+  }
+
+  const QUOTE_EXPORT_SETTINGS_KEY = 'hord_quote_export_settings_v2';
+  const QUOTE_EXPORT_FAVORITES_KEY = 'hord_quote_export_favorites_v1';
+  const quoteExporter = globalThis.QuoteCardExporter || null;
+
+  function loadQuoteExportSettings(){
+    const base = quoteExporter?.DEFAULT_SETTINGS || {
+      template:'light', ratio:'1:1', density:'standard', fontAdjust:0, mainFont:'inter', cjkFont:'notoSansSC', enhanceContent:true, showTranslation:true, showAnnotation:false, showSource:true, showWatermark:true, watermarkMode:'signature', isProUser:false, filenamePattern:'hord-{date}-{template}-{ratio}'
+    };
+    try{
+      const raw = localStorage.getItem(QUOTE_EXPORT_SETTINGS_KEY);
+      if(!raw) return Object.assign({}, base);
+      const parsed = JSON.parse(raw);
+      return quoteExporter?.normalizeSettings
+        ? quoteExporter.normalizeSettings(Object.assign({}, base, parsed))
+        : Object.assign({}, base, parsed);
+    }catch(_){
+      return Object.assign({}, base);
+    }
+  }
+
+  function saveQuoteExportSettings(settings){
+    try{
+      localStorage.setItem(QUOTE_EXPORT_SETTINGS_KEY, JSON.stringify(settings));
+    }catch(_){/* ignore */}
+  }
+
+  function loadQuoteExportFavorites(){
+    try{
+      const raw = localStorage.getItem(QUOTE_EXPORT_FAVORITES_KEY);
+      if(!raw) return [];
+      const parsed = JSON.parse(raw);
+      if(!Array.isArray(parsed)) return [];
+      return parsed
+        .filter(it => it && typeof it.name === 'string' && it.settings && typeof it.settings === 'object')
+        .slice(0, 24);
+    }catch(_){
+      return [];
+    }
+  }
+
+  function saveQuoteExportFavorites(list){
+    try{
+      localStorage.setItem(QUOTE_EXPORT_FAVORITES_KEY, JSON.stringify(Array.isArray(list) ? list.slice(0, 24) : []));
+    }catch(_){/* ignore */}
+  }
+
+  function getSentenceById(id){
+    const list = state.db?.collectedSentences || [];
+    return list.find(item => Number(item.createdAt || item.id) === Number(id)) || null;
+  }
+
+  function readQuoteSettingsFromForm(){
+    const raw = {
+      template: el.quoteTemplate?.value || 'light',
+      ratio: el.quoteRatio?.value || '1:1',
+      density: el.quoteDensity?.value || 'standard',
+      fontAdjust: Number(el.quoteFontAdjust?.value || 0),
+      mainFont: el.quoteMainFont?.value || 'inter',
+      cjkFont: el.quoteCjkFont?.value || 'notoSansSC',
+      enhanceContent: el.quoteEnhanceContent ? !!el.quoteEnhanceContent.checked : true,
+      annotationStyle: el.quoteAnnotationStyle?.value === 'emphasis' ? 'emphasis' : 'normal',
+      showTranslation: !!el.quoteShowTranslation?.checked,
+      showAnnotation: !!el.quoteShowAnnotation?.checked,
+      showSource: !!el.quoteShowSource?.checked,
+      showWatermark: !!el.quoteShowWatermark?.checked,
+      watermarkMode: el.quoteWatermarkMode?.value || 'signature',
+      previewScaleMode: el.quotePreviewScale?.value || 'fit',
+      filenamePattern: String(el.quoteFilenamePattern?.value || 'hord-{date}-{template}-{ratio}').trim(),
+      isProUser: false,
+      features: {
+        advancedTemplates: false,
+        backgroundWatermark: false,
+        highResolutionExport: false,
+      },
+    };
+    state.quoteExport = quoteExporter?.normalizeSettings ? quoteExporter.normalizeSettings(raw) : raw;
+    saveQuoteExportSettings(state.quoteExport);
+    return state.quoteExport;
+  }
+
+  function readQuoteOverridesFromForm(){
+    return {
+      sourceTextOverride: String(el.quoteSourceOverride?.value || '').trim(),
+      annotationTextOverride: String(el.quoteAnnotationOverride?.value || '').trim(),
+    };
+  }
+
+  function getDefaultSourceText(sentence){
+    return quoteExporter?.toReadableSource
+      ? quoteExporter.toReadableSource(sentence?.url || sentence?.sourceUrl || sentence?.pageUrl || '')
+      : (quoteExporter?.getDomainText ? quoteExporter.getDomainText(sentence?.url || sentence?.sourceUrl || sentence?.pageUrl || '') : '');
+  }
+
+  const QUOTE_PRESETS = {
+    study: {
+      template: 'light',
+      ratio: '4:5',
+      density: 'standard',
+      fontAdjust: 1,
+      mainFont: 'inter',
+      cjkFont: 'notoSansSC',
+      enhanceContent: true,
+      annotationStyle: 'normal',
+      showTranslation: true,
+      showAnnotation: true,
+      showSource: true,
+      showWatermark: true,
+      watermarkMode: 'signature',
+      filenamePattern: 'hord-study-{date}-{template}-{ratio}',
+    },
+    social: {
+      template: 'gradientSoft',
+      ratio: '4:5',
+      density: 'airy',
+      fontAdjust: 2,
+      mainFont: 'playfair',
+      cjkFont: 'notoSerifSC',
+      enhanceContent: true,
+      annotationStyle: 'normal',
+      showTranslation: true,
+      showAnnotation: false,
+      showSource: true,
+      showWatermark: true,
+      watermarkMode: 'cornerLogo',
+      filenamePattern: 'hord-social-{date}-{template}-{ratio}',
+    },
+    minimal: {
+      template: 'dark',
+      ratio: '1:1',
+      density: 'compact',
+      fontAdjust: 0,
+      mainFont: 'lora',
+      cjkFont: 'notoSansSC',
+      enhanceContent: true,
+      annotationStyle: 'normal',
+      showTranslation: false,
+      showAnnotation: false,
+      showSource: false,
+      showWatermark: true,
+      watermarkMode: 'signature',
+      filenamePattern: 'hord-min-{date}-{template}-{ratio}',
+    },
+  };
+
+  function applyQuotePreset(name){
+    const preset = QUOTE_PRESETS[name];
+    if(!preset) return;
+    if(el.quoteTemplate) el.quoteTemplate.value = preset.template;
+    if(el.quoteRatio) el.quoteRatio.value = preset.ratio;
+    if(el.quoteDensity) el.quoteDensity.value = preset.density;
+    if(el.quoteFontAdjust) el.quoteFontAdjust.value = String(preset.fontAdjust);
+    if(el.quoteMainFont) el.quoteMainFont.value = preset.mainFont || 'inter';
+    if(el.quoteCjkFont) el.quoteCjkFont.value = preset.cjkFont || 'notoSansSC';
+    if(el.quoteEnhanceContent) el.quoteEnhanceContent.checked = preset.enhanceContent !== false;
+    if(el.quoteAnnotationStyle) el.quoteAnnotationStyle.value = preset.annotationStyle || 'normal';
+    if(el.quoteShowTranslation) el.quoteShowTranslation.checked = !!preset.showTranslation;
+    if(el.quoteShowAnnotation) el.quoteShowAnnotation.checked = !!preset.showAnnotation;
+    if(el.quoteShowSource) el.quoteShowSource.checked = !!preset.showSource;
+    if(el.quoteShowWatermark) el.quoteShowWatermark.checked = !!preset.showWatermark;
+    if(el.quoteWatermarkMode) el.quoteWatermarkMode.value = preset.watermarkMode;
+    if(el.quoteFilenamePattern) el.quoteFilenamePattern.value = preset.filenamePattern;
+    updateQuoteFontAdjustLabel();
+    syncTemplateWallActive();
+    renderQuotePreview();
+  }
+
+  function syncTemplateWallActive(){
+    if(!el.quoteTemplateWall) return;
+    const current = el.quoteTemplate?.value || '';
+    for(const btn of Array.from(el.quoteTemplateWall.querySelectorAll('.quoteTplThumb[data-template]'))){
+      btn.classList.toggle('active', btn.getAttribute('data-template') === current);
+    }
+  }
+
+  function getTemplateWallOrder(){
+    if(!el.quoteTemplateWall) return [];
+    return Array.from(el.quoteTemplateWall.querySelectorAll('.quoteTplThumb[data-template]'))
+      .map(btn => String(btn.getAttribute('data-template') || '').trim())
+      .filter(Boolean);
+  }
+
+  function cycleQuoteTemplate(step){
+    if(!el.quoteTemplate) return;
+    const order = getTemplateWallOrder();
+    if(!order.length) return;
+    const cur = String(el.quoteTemplate.value || order[0]);
+    const idx = Math.max(0, order.indexOf(cur));
+    const next = order[(idx + step + order.length) % order.length];
+    el.quoteTemplate.value = next;
+    syncTemplateWallActive();
+    renderQuotePreview();
+  }
+
+  function quoteModalOpen(){
+    return !!(el.quoteExportMask && el.quoteExportMask.style.display === 'flex');
+  }
+
+  function getFavoriteSettingsSnapshot(){
+    const settings = readQuoteSettingsFromForm();
+    return {
+      template: settings.template,
+      ratio: settings.ratio,
+      density: settings.density,
+      fontAdjust: settings.fontAdjust,
+      mainFont: settings.mainFont || 'inter',
+      cjkFont: settings.cjkFont || 'notoSansSC',
+      enhanceContent: settings.enhanceContent !== false,
+      annotationStyle: settings.annotationStyle === 'emphasis' ? 'emphasis' : 'normal',
+      showTranslation: settings.showTranslation,
+      showAnnotation: settings.showAnnotation,
+      showSource: settings.showSource,
+      showWatermark: settings.showWatermark,
+      watermarkMode: settings.watermarkMode,
+      filenamePattern: settings.filenamePattern,
+    };
+  }
+
+  function syncQuoteFavoriteOptions(){
+    if(!el.quoteFavoritePreset) return;
+    const list = loadQuoteExportFavorites();
+    const current = el.quoteFavoritePreset.value || '';
+    el.quoteFavoritePreset.innerHTML = '<option value="">选择收藏...</option>';
+    for(const item of list){
+      const op = document.createElement('option');
+      op.value = item.name;
+      op.textContent = item.name;
+      el.quoteFavoritePreset.appendChild(op);
+    }
+    if(current && list.some(it => it.name === current)) el.quoteFavoritePreset.value = current;
+  }
+
+  function applyQuoteFavoriteByName(name){
+    const target = String(name || '').trim();
+    if(!target) return false;
+    const list = loadQuoteExportFavorites();
+    const found = list.find(it => it.name === target);
+    if(!found || !found.settings) return false;
+    const s = found.settings;
+    if(el.quoteTemplate) el.quoteTemplate.value = s.template || 'light';
+    if(el.quoteRatio) el.quoteRatio.value = s.ratio || '1:1';
+    if(el.quoteDensity) el.quoteDensity.value = s.density || 'standard';
+    if(el.quoteFontAdjust) el.quoteFontAdjust.value = String(Number(s.fontAdjust || 0));
+    if(el.quoteMainFont) el.quoteMainFont.value = s.mainFont || 'inter';
+    if(el.quoteCjkFont) el.quoteCjkFont.value = s.cjkFont || 'notoSansSC';
+    if(el.quoteEnhanceContent) el.quoteEnhanceContent.checked = s.enhanceContent !== false;
+    if(el.quoteAnnotationStyle) el.quoteAnnotationStyle.value = s.annotationStyle === 'emphasis' ? 'emphasis' : 'normal';
+    if(el.quoteShowTranslation) el.quoteShowTranslation.checked = !!s.showTranslation;
+    if(el.quoteShowAnnotation) el.quoteShowAnnotation.checked = !!s.showAnnotation;
+    if(el.quoteShowSource) el.quoteShowSource.checked = !!s.showSource;
+    if(el.quoteShowWatermark) el.quoteShowWatermark.checked = !!s.showWatermark;
+    if(el.quoteWatermarkMode) el.quoteWatermarkMode.value = s.watermarkMode || 'signature';
+    if(el.quoteFilenamePattern) el.quoteFilenamePattern.value = s.filenamePattern || 'hord-{date}-{template}-{ratio}';
+    updateQuoteFontAdjustLabel();
+    syncTemplateWallActive();
+    renderQuotePreview();
+    return true;
+  }
+
+  function applyQuoteUiPolicy(settings){
+    const allTemplates = ['light', 'dark', 'hordSignature', 'editorial', 'gradientSoft', 'boldImpact', 'letterClassic', 'parchment', 'inkJournal', 'typewriter'];
+    const allowedTpl = new Set(allTemplates);
+    const allowedWm = new Set(['signature', 'cornerLogo', 'backgroundLogo']);
+    if(el.quoteTemplate){
+      for(const option of Array.from(el.quoteTemplate.options || [])){
+        option.disabled = !allowedTpl.has(option.value);
+      }
+      if(!allowedTpl.has(el.quoteTemplate.value)){
+        const first = Array.from(allowedTpl)[0];
+        if(first) el.quoteTemplate.value = first;
+      }
+    }
+    if(el.quoteWatermarkMode){
+      for(const option of Array.from(el.quoteWatermarkMode.options || [])){
+        option.disabled = !allowedWm.has(option.value);
+      }
+      if(!allowedWm.has(el.quoteWatermarkMode.value)){
+        const first = Array.from(allowedWm)[0];
+        if(first) el.quoteWatermarkMode.value = first;
+      }
+    }
+    if(el.quoteRatio){
+      for(const option of Array.from(el.quoteRatio.options || [])) option.disabled = false;
+      el.quoteRatio.disabled = false;
+    }
+    if(el.quoteDensity){
+      el.quoteDensity.disabled = false;
+    }
+    if(el.quoteFontAdjust){
+      el.quoteFontAdjust.disabled = false;
+    }
+    if(el.quoteFilenamePattern){
+      el.quoteFilenamePattern.disabled = false;
+    }
+    if(el.quoteShowWatermark){
+      el.quoteShowWatermark.disabled = false;
+    }
+    if(el.quotePreset){
+      el.quotePreset.disabled = false;
+    }
+    if(el.quoteEnhanceContent){
+      el.quoteEnhanceContent.disabled = false;
+    }
+    if(el.quoteProHint){
+      el.quoteProHint.textContent = '当前版本已开放全部模板与水印模式。';
+    }
+  }
+
+  function updateQuoteFontAdjustLabel(){
+    if(!el.quoteFontAdjustValue) return;
+    const n = Number(el.quoteFontAdjust?.value || 0);
+    const sign = n > 0 ? `+${n}` : `${n}`;
+    el.quoteFontAdjustValue.textContent = sign;
+  }
+
+  function syncQuoteSettingsToForm(settings){
+    if(!settings) return;
+    if(el.quoteTemplate) el.quoteTemplate.value = settings.template;
+    if(el.quoteRatio) el.quoteRatio.value = settings.ratio;
+    if(el.quoteDensity) el.quoteDensity.value = settings.density || 'standard';
+    if(el.quoteFontAdjust) el.quoteFontAdjust.value = String(Number(settings.fontAdjust || 0));
+    if(el.quoteMainFont) el.quoteMainFont.value = settings.mainFont || 'inter';
+    if(el.quoteCjkFont) el.quoteCjkFont.value = settings.cjkFont || 'notoSansSC';
+    if(el.quoteEnhanceContent) el.quoteEnhanceContent.checked = settings.enhanceContent !== false;
+    if(el.quoteAnnotationStyle) el.quoteAnnotationStyle.value = settings.annotationStyle === 'emphasis' ? 'emphasis' : 'normal';
+    if(el.quoteFilenamePattern) el.quoteFilenamePattern.value = settings.filenamePattern || 'hord-{date}-{template}-{ratio}';
+    if(el.quoteShowTranslation) el.quoteShowTranslation.checked = !!settings.showTranslation;
+    if(el.quoteShowAnnotation) el.quoteShowAnnotation.checked = !!settings.showAnnotation;
+    if(el.quoteShowSource) el.quoteShowSource.checked = !!settings.showSource;
+    if(el.quoteShowWatermark) el.quoteShowWatermark.checked = !!settings.showWatermark;
+    if(el.quoteWatermarkMode) el.quoteWatermarkMode.value = settings.watermarkMode || 'signature';
+    if(el.quotePreviewScale) el.quotePreviewScale.value = settings.previewScaleMode || 'fit';
+    updateQuoteFontAdjustLabel();
+    applyQuoteUiPolicy(settings);
+    syncTemplateWallActive();
+  }
+
+  function renderQuotePreview(){
+    if(!state.quoteExportSentenceId || !quoteExporter || !el.quotePreviewCanvas) return;
+    const sentence = getSentenceById(state.quoteExportSentenceId);
+    if(!sentence) return;
+    const settings = Object.assign({}, readQuoteSettingsFromForm(), readQuoteOverridesFromForm());
+    const scaleMode = String(el.quotePreviewScale?.value || settings.previewScaleMode || 'fit');
+    settings.previewScaleMode = scaleMode;
+    if(scaleMode === 'fit'){
+      settings.previewFit = true;
+      settings.previewScale = 1;
+    }else{
+      settings.previewFit = false;
+      settings.previewScale = Number(scaleMode || 1);
+    }
+    const stageH = Number(el.quotePreviewStage?.clientHeight || 0);
+    const stageW = Number(el.quotePreviewStage?.clientWidth || 0);
+    if(stageH > 0) settings.previewMaxHeight = Math.max(180, stageH - 8);
+    if(stageW > 0) settings.previewMaxWidth = Math.max(220, stageW - 8);
+    if(el.quoteCurrentText){
+      const text = String(sentence.text || '').trim();
+      el.quoteCurrentText.textContent = text ? `当前金句：${text.slice(0, 110)}${text.length > 110 ? '…' : ''}` : '当前金句：-';
+    }
+    syncTemplateWallActive();
+    try{
+      quoteExporter.renderPreview(sentence, settings, el.quotePreviewCanvas);
+      renderQuoteQualityHint(settings, el.quotePreviewCanvas);
+      renderQuoteAnnotationMeta(settings, el.quotePreviewCanvas);
+    }catch(err){
+      showManagerToast(err?.message || '预览生成失败');
+      renderQuoteQualityHint(null, null, err?.message || '预览失败');
+      renderQuoteAnnotationMeta(null, null, err?.message || '预览失败');
+    }
+  }
+
+  function renderQuoteAnnotationMeta(settings, canvas, fallbackError){
+    if(!el.quoteAnnotationMeta) return;
+    if(fallbackError){
+      el.quoteAnnotationMeta.textContent = `批注预估：${fallbackError}`;
+      return;
+    }
+    if(!settings?.showAnnotation){
+      el.quoteAnnotationMeta.textContent = '批注预估：未启用批注显示';
+      return;
+    }
+    const val = String(el.quoteAnnotationOverride?.value || '').trim();
+    if(!val){
+      el.quoteAnnotationMeta.textContent = '批注预估：当前为空';
+      return;
+    }
+    const ann = canvas?.__layoutDebug?.annotation || null;
+    if(ann && Number.isFinite(ann.lines)){
+      const lines = Number(ann.lines || 0);
+      const maxLines = Number(ann.maxLines || 3);
+      const raw = Number(ann.rawLines || lines);
+      const truncated = raw > maxLines;
+      el.quoteAnnotationMeta.textContent = truncated
+        ? `批注预估：${lines}/${maxLines} 行，导出时会截断`
+        : `批注预估：${lines}/${maxLines} 行，完整显示`;
+      return;
+    }
+    el.quoteAnnotationMeta.textContent = '批注预估：正在计算...';
+  }
+
+  function renderQuoteQualityHint(settings, canvas, fallbackError){
+    if(!el.quoteQualityHint) return;
+    if(fallbackError){
+      el.quoteQualityHint.className = 'quoteQualityHint high';
+      el.quoteQualityHint.textContent = `质量提醒：${fallbackError}`;
+      return;
+    }
+    const report = quoteExporter?.getQualityReport
+      ? quoteExporter.getQualityReport(settings || {}, canvas?.__layoutDebug || null)
+      : null;
+    if(!report){
+      el.quoteQualityHint.className = 'quoteQualityHint';
+      el.quoteQualityHint.textContent = '质量提醒：暂无质量数据。';
+      return;
+    }
+    const levelClass = report.level === 'ok' ? 'ok' : (report.level === 'high' ? 'high' : 'warn');
+    el.quoteQualityHint.className = `quoteQualityHint ${levelClass}`;
+    if(report.warnings && report.warnings.length){
+      el.quoteQualityHint.textContent = `质量提醒：${report.warnings.join('；')}`;
+    }else{
+      el.quoteQualityHint.textContent = '质量提醒：排版状态良好。';
+    }
+  }
+
+  function openQuoteExportModal(id){
+    if(!quoteExporter){
+      alert('导出模块未加载，请刷新页面后重试。');
+      return;
+    }
+    const sentence = getSentenceById(id);
+    if(!sentence){
+      alert('找不到对应金句，可能已被删除。');
+      return;
+    }
+    state.quoteExportSentenceId = Number(id);
+    if(!state.quoteExport) state.quoteExport = loadQuoteExportSettings();
+    syncQuoteSettingsToForm(state.quoteExport);
+    syncQuoteFavoriteOptions();
+    if(el.quotePreset) el.quotePreset.value = '';
+    if(el.quoteSourceOverride){
+      const source = getDefaultSourceText(sentence);
+      el.quoteSourceOverride.value = source || '';
+    }
+    if(el.quoteAnnotationOverride){
+      el.quoteAnnotationOverride.value = String(sentence?.note || '').trim();
+    }
+    document.body.classList.add('quote-export-open');
+    if(el.quoteExportMask) el.quoteExportMask.style.display = 'flex';
+    renderQuotePreview();
+  }
+
+  function closeQuoteExportModal(){
+    if(el.quoteExportMask) el.quoteExportMask.style.display = 'none';
+    document.body.classList.remove('quote-export-open');
+    state.quoteExportSentenceId = null;
+  }
+
+  function clearPendingQuoteExportQuery(){
+    try{
+      const next = new URL(String(location.href || ''));
+      next.searchParams.delete('quoteExport');
+      next.searchParams.delete('quoteId');
+      history.replaceState(null, '', next.toString());
+    }catch(_){/* ignore */}
+  }
+
+  function tryOpenPendingQuoteExport(){
+    if(!state.pendingQuoteExport) return;
+    const list = state.db?.collectedSentences || [];
+    const req = state.pendingQuoteExport;
+
+    if(state.tab !== 'sentences') setTab('sentences');
+    if(!list.length){
+      showManagerToast('未找到可导出的金句，请先收藏一句再试。');
+      state.pendingQuoteExport = null;
+      clearPendingQuoteExportQuery();
+      return;
+    }
+
+    let target = null;
+    if(req.quoteId){
+      target = list.find(item => Number(item.createdAt || item.id) === Number(req.quoteId)) || null;
+    }
+    if(!target) target = list[0];
+
+    state.pendingQuoteExport = null;
+    clearPendingQuoteExportQuery();
+    openQuoteExportModal(Number(target.createdAt || target.id || 0));
+  }
 
   // -----------------------------
   // Export/Import payload helpers
@@ -266,6 +919,15 @@
   function buildImportErrorTip(errMsg){
     const msg = String(errMsg||'').toLowerCase();
     if(!msg) return '';
+    if(msg.includes('feature_locked_import_export')){
+      return '该账号当前为免费版权益，导入功能仅专业版可用。';
+    }
+    if(msg.includes('free_limit_')){
+      return '超过免费版单词上限（200），请升级专业版或减少导入数量。';
+    }
+    if(msg.includes('note_limit_')){
+      return '超过免费版批注上限（10），请升级专业版或清理批注后重试。';
+    }
     if(msg.includes('message') && (msg.includes('length') || msg.includes('size') || msg.includes('too large') || msg.includes('max'))){
       return '可能是消息过大：尝试拆分文件或减少导入数量。';
     }
@@ -281,12 +943,55 @@
     return '';
   }
 
-  async function getDB(){
+  async function getStateSnapshot(){
     const res = await sendMessage({type:'OP_GET_STATE'});
-    if(res && res.ok && res.db) return res.db;
+    if(res && res.ok && res.db){
+      return {
+        db: res.db,
+        entitlements: normalizeEntitlements(res.entitlements || res.db?.auth?.entitlements),
+      };
+    }
     // fallback (shouldn't happen)
     const raw = await new Promise(r=>chrome.storage.local.get(null, r));
-    return raw.vocab_builder_db || raw;
+    const db = raw.vocab_builder_db || raw;
+    return { db, entitlements: normalizeEntitlements(db?.auth?.entitlements) };
+  }
+
+  async function getDB(){
+    const snapshot = await getStateSnapshot();
+    return snapshot.db;
+  }
+
+  function applyAccessPolicy(){
+    const ent = getEntitlements();
+    const canImex = !!ent.import_export;
+    const canBulk = !!ent.bulk_edit;
+
+    const lockBtn = (node, locked, title)=>{
+      if(!node) return;
+      // Keep button clickable so guardFeature toast can explain why it's unavailable.
+      node.disabled = false;
+      node.setAttribute('aria-disabled', locked ? 'true' : 'false');
+      node.dataset.locked = locked ? '1' : '0';
+      node.style.opacity = locked ? '.58' : '';
+      node.style.cursor = locked ? 'not-allowed' : '';
+      node.title = locked ? (title || '专业版功能') : '';
+    };
+
+    lockBtn(el.btnImport, !canImex, '导入仅专业版可用');
+    lockBtn(el.btnExport, !canImex, '导出仅专业版可用');
+    lockBtn(el.btnImportSent, !canImex, '导入仅专业版可用');
+    // 句子导出图片是核心高频功能，始终可用（与数据导出权限分离）。
+    lockBtn(el.btnExportSent, false, '');
+    lockBtn(el.btnBulkCycle, !canBulk, '批量编辑仅专业版可用');
+    lockBtn(el.btnBulkDelete, !canBulk, '批量编辑仅专业版可用');
+    lockBtn(el.btnBulkDeleteSent, !canBulk, '批量编辑仅专业版可用');
+
+    if(el.limitInfo){
+      el.limitInfo.textContent = ent.review_mode === 'advanced'
+        ? 'Personal English Asset System · Pro'
+        : 'Personal English Asset System · Free';
+    }
   }
 
   function normalizeWordStatus(db, w){
@@ -400,6 +1105,106 @@
       window.open(url, '_blank');
     }
     setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 0);
+  }
+
+  function showManagerToast(message, type='error', opts={}){
+    let host = document.getElementById('managerToastHost');
+    if(!host){
+      host = document.createElement('div');
+      host.id = 'managerToastHost';
+      document.body.appendChild(host);
+    }
+    const item = document.createElement('div');
+    item.className = `manager-toast ${type === 'success' ? 'success' : 'error'}`;
+    item.textContent = String(message || '');
+    const anchorEl = opts && opts.anchorEl && typeof opts.anchorEl.getBoundingClientRect === 'function'
+      ? opts.anchorEl
+      : null;
+    if(anchorEl){
+      const rect = anchorEl.getBoundingClientRect();
+      const maxW = 320;
+      const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+      const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+      const estH = 46;
+      const gap = 10;
+      let left = rect.left + (rect.width / 2) - (maxW / 2);
+      let top = rect.top - estH - gap;
+      if(left < 8) left = 8;
+      if(left + maxW > vw - 8) left = vw - maxW - 8;
+      if(top < 8) top = Math.min(vh - estH - 8, rect.bottom + gap);
+      item.classList.add('is-anchor');
+      item.style.left = `${Math.round(left)}px`;
+      item.style.top = `${Math.round(top)}px`;
+      item.style.width = `${maxW}px`;
+    }
+    host.appendChild(item);
+    requestAnimationFrame(()=> item.classList.add('show'));
+    setTimeout(()=>{
+      item.classList.remove('show');
+      setTimeout(()=> item.remove(), 220);
+    }, 2600);
+  }
+
+  async function exportSentenceToPng(sentence){
+    if(!quoteExporter){
+      throw new Error('导出模块未加载，请刷新页面重试。');
+    }
+    const settings = state.quoteExport || loadQuoteExportSettings();
+    const normalized = quoteExporter.normalizeSettings ? quoteExporter.normalizeSettings(settings) : settings;
+    return quoteExporter.exportPng(sentence, normalized, { filenamePrefix: 'hord-quote' });
+  }
+
+  async function copySentenceCardToClipboard(sentence){
+    if(!quoteExporter){
+      throw new Error('导出模块未加载，请刷新页面重试。');
+    }
+    const settings = state.quoteExport || loadQuoteExportSettings();
+    const normalized = quoteExporter.normalizeSettings ? quoteExporter.normalizeSettings(settings) : settings;
+    if(quoteExporter.copyPngToClipboard){
+      return quoteExporter.copyPngToClipboard(sentence, normalized);
+    }
+    if(!navigator.clipboard || typeof navigator.clipboard.write !== 'function' || typeof ClipboardItem === 'undefined'){
+      throw new Error('当前浏览器不支持复制图片到剪贴板。');
+    }
+    const canvas = quoteExporter.drawCard(sentence, normalized);
+    const blob = await new Promise((resolve, reject)=>{
+      canvas.toBlob((b)=>{
+        if(b) resolve(b);
+        else reject(new Error('图片生成失败，请重试。'));
+      }, 'image/png');
+    });
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+    return true;
+  }
+
+  function getBatchSentenceList(){
+    const list = state.db?.collectedSentences || [];
+    const selected = Array.from(state.selectedSent || []).map(Number).filter(Number.isFinite);
+    if(!selected.length){
+      const current = getSentenceById(state.quoteExportSentenceId);
+      return current ? [current] : [];
+    }
+    const mapped = selected
+      .map(id => list.find(item => Number(item.createdAt || item.id) === id))
+      .filter(Boolean);
+    return mapped.length ? mapped : [];
+  }
+
+  async function batchExportSentenceCards(sentences){
+    const settings = state.quoteExport || loadQuoteExportSettings();
+    const total = sentences.length;
+    for(let i = 0; i < total; i += 1){
+      const item = sentences[i];
+      const merged = Object.assign({}, settings, { batchIndex: i + 1, batchTotal: total });
+      await quoteExporter.exportPng(item, merged, {
+        filenamePrefix: 'hord-quote',
+        index: i + 1,
+        filenamePattern: settings.filenamePattern || 'hord-{date}-{template}-{ratio}',
+      });
+      showManagerToast(`批量导出中 ${i + 1}/${total}`, 'success');
+      await new Promise(r => setTimeout(r, 80));
+    }
+    return total;
   }
 
   function pickAudio(db, w, variant){
@@ -669,6 +1474,7 @@
   }
 
   function setTab(tab){
+    if(tab === 'words') clearWordOrderLock();
     state.tab = tab;
     const isWords = tab === 'words';
     el.tabWords.classList.toggle('active', isWords);
@@ -1197,33 +2003,43 @@
       return 0; // red/new/unknown
     };
 
-    words.sort((a,b)=>{
-      if(sortField === 'alpha'){
-        return a.localeCompare(b, 'en', {sensitivity:'base'}) * dir;
-      }
-      if(sortField === 'reviewCount' || sortField === 'count'){
-        const av = Number(meta[a]?.reviewCount ?? 0);
-        const bv = Number(meta[b]?.reviewCount ?? 0);
-        return (av - bv) * dir;
-      }
-      if(sortField === 'mastery'){
-        const av = Number(meta[a]?.mastery ?? meta[a]?.masteryLevel ?? 0);
-        const bv = Number(meta[b]?.mastery ?? meta[b]?.masteryLevel ?? 0);
-        return (av - bv) * dir;
-      }
-      if(sortField === 'status'){
-        const av = statusRank(normalizeWordStatus(db, a));
-        const bv = statusRank(normalizeWordStatus(db, b));
-        // if same status, fall back to time
-        if(av !== bv) return (av - bv) * dir;
-      }
+    if(state.lockWordOrder && Array.isArray(state.frozenWordOrder) && state.frozenWordOrder.length){
+      const rank = new Map(state.frozenWordOrder.map((w, i) => [w, i]));
+      words.sort((a, b) => {
+        const ra = rank.has(a) ? rank.get(a) : Number.MAX_SAFE_INTEGER;
+        const rb = rank.has(b) ? rank.get(b) : Number.MAX_SAFE_INTEGER;
+        if(ra !== rb) return ra - rb;
+        return a.localeCompare(b, 'en', {sensitivity:'base'});
+      });
+    }else{
+      words.sort((a,b)=>{
+        if(sortField === 'alpha'){
+          return a.localeCompare(b, 'en', {sensitivity:'base'}) * dir;
+        }
+        if(sortField === 'reviewCount' || sortField === 'count'){
+          const av = Number(meta[a]?.reviewCount ?? 0);
+          const bv = Number(meta[b]?.reviewCount ?? 0);
+          return (av - bv) * dir;
+        }
+        if(sortField === 'mastery'){
+          const av = Number(meta[a]?.mastery ?? meta[a]?.masteryLevel ?? 0);
+          const bv = Number(meta[b]?.mastery ?? meta[b]?.masteryLevel ?? 0);
+          return (av - bv) * dir;
+        }
+        if(sortField === 'status'){
+          const av = statusRank(normalizeWordStatus(db, a));
+          const bv = statusRank(normalizeWordStatus(db, b));
+          // if same status, fall back to time
+          if(av !== bv) return (av - bv) * dir;
+        }
 
-      // default: time
-      const at = Number(meta[a]?.updatedAt ?? meta[a]?.createdAt ?? 0);
-      const bt = Number(meta[b]?.updatedAt ?? meta[b]?.createdAt ?? 0);
-      if(at !== bt) return (at - bt) * dir;
-      return a.localeCompare(b, 'en', {sensitivity:'base'}) * dir;
-    });
+        // default: time
+        const at = Number(meta[a]?.updatedAt ?? meta[a]?.createdAt ?? 0);
+        const bt = Number(meta[b]?.updatedAt ?? meta[b]?.createdAt ?? 0);
+        if(at !== bt) return (at - bt) * dir;
+        return a.localeCompare(b, 'en', {sensitivity:'base'}) * dir;
+      });
+    }
     if(el.wordCards) el.wordCards.innerHTML = '';
     if(!words.length){
       el.emptyWords.style.display = 'block';
@@ -1237,6 +2053,7 @@
     for(const w of words){
       const card = document.createElement('div');
       card.className = 'word-card';
+      card.dataset.word = w;
 
       const checked = state.selectedWords.has(w);
       const status = normalizeWordStatus(db, w);
@@ -1398,8 +2215,13 @@
           </div>
 
           <div class="sentence-actions">
-            <button class="iconBtn note" data-act="edit-note" data_toggle="sent" data-id="${id}" title="编辑批注"><span class="icon-emoji">📝</span></button>
-            <button class="iconBtn danger" data-act="del-sent" data-id="${id}" title="删除"><span class="icon-emoji">🗑</span></button>
+            <button class="iconBtn link sentence-export-btn" data-act="export-sent" data-id="${id}" title="导出图片">
+              <span class="icon-emoji">🖼️</span><span class="icon-text">导出图片</span>
+            </button>
+            <div class="sentence-side-actions">
+              <button class="iconBtn note" data-act="edit-note" data_toggle="sent" data-id="${id}" title="编辑批注"><span class="icon-emoji">📝</span></button>
+              <button class="iconBtn danger" data-act="del-sent" data-id="${id}" title="删除"><span class="icon-emoji">🗑</span></button>
+            </div>
           </div>
         </div>
       `;
@@ -1418,24 +2240,29 @@
     else renderSentences();
   }
 
-  async function refresh(){
-    state.db = await getDB();
+  async function refresh(opts = {}){
+    if(opts.explicit) clearWordOrderLock();
+    const snap = await getStateSnapshot();
+    state.db = snap.db;
+    state.entitlements = snap.entitlements;
+    applyAccessPolicy();
+    applyQuoteUiPolicy(state.quoteExport || loadQuoteExportSettings());
     // version label
     try{
       const man = chrome.runtime.getManifest();
       if(el.ver) el.ver.textContent = `v${man.version}`;
       if(el.realTimeStat) el.realTimeStat.textContent = '';
-      if(el.limitInfo) el.limitInfo.textContent = 'Personal English Asset System';
     }catch(e){}
     render();
+    tryOpenPendingQuoteExport();
   }
 
   // --- Events ---
   el.tabWords.addEventListener('click', ()=>setTab('words'));
   el.tabSentences.addEventListener('click', ()=>setTab('sentences'));
 
-  el.search.addEventListener('input', ()=>render());
-  el.sortField.addEventListener('change', ()=>render());
+  el.search.addEventListener('input', ()=>{ clearWordOrderLock(); render(); });
+  el.sortField.addEventListener('change', ()=>{ clearWordOrderLock(); render(); });
   if(el.toggleCn) el.toggleCn.addEventListener('change', ()=>{ state.viewFlags.cn = !!el.toggleCn.checked; render(); });
   if(el.toggleEn) el.toggleEn.addEventListener('change', ()=>{ state.viewFlags.en = !!el.toggleEn.checked; render(); });
   if(el.toggleNote) el.toggleNote.addEventListener('change', ()=>{ state.viewFlags.note = !!el.toggleNote.checked; render(); });
@@ -1452,6 +2279,7 @@
     el.sortDir.addEventListener('click', ()=>{
       el.sortDir.dataset.dir = (el.sortDir.dataset.dir==='asc') ? 'desc' : 'asc';
       syncSortDirLabel();
+      clearWordOrderLock();
       render();
     });
   }
@@ -1520,9 +2348,12 @@
       if(!w) return;
       const current = normalizeWordStatus(state.db || {}, w);
       const next = nextStatus(current);
+      state.frozenWordOrder = getCurrentWordOrderFromDom();
+      state.lockWordOrder = state.frozenWordOrder.length > 0;
 	  // background.js expects: msg.words OR msg.payload.words OR msg.word
 	  await sendMessage({type:'OP_SET_WORD_STATUS', payload:{words:[w], status:next}});
-      await refresh();
+      state.db = await getDB();
+      render();
       return;
     }
     if(act === 'toggle-en'){
@@ -1626,6 +2457,12 @@
       if(url) window.open(url, '_blank');
       return;
     }
+    if(act === 'export-sent'){
+      const id = Number(target.getAttribute('data-id'));
+      if(!Number.isFinite(id)) return;
+      openQuoteExportModal(id);
+      return;
+    }
     if(act === 'edit-note'){
       const id = Number(target.getAttribute('data-id'));
       if(!Number.isFinite(id)) return;
@@ -1670,8 +2507,231 @@
     // (selection handled above)
   });
 
-  el.btnRefresh.addEventListener('click', refresh);
-  el.btnRefresh2.addEventListener('click', refresh);
+
+
+  // Quick-save notes: Cmd/Ctrl + Enter
+  if(el.wordCards) el.wordCards.addEventListener('keydown', (e)=>{
+    if(!(e.target instanceof HTMLTextAreaElement)) return;
+    if(!e.target.matches('.word-note-editor .note-input')) return;
+    if(!(e.metaKey || e.ctrlKey) || e.key !== 'Enter') return;
+    e.preventDefault();
+    const editor = e.target.closest('.word-note-editor');
+    const btn = editor ? editor.querySelector('[data-act="save-note"]') : null;
+    if(btn instanceof HTMLButtonElement) btn.click();
+  });
+
+  if(el.sentCards) el.sentCards.addEventListener('keydown', (e)=>{
+    if(!(e.target instanceof HTMLTextAreaElement)) return;
+    if(!e.target.matches('.sentence-note-editor .note-input')) return;
+    if(!(e.metaKey || e.ctrlKey) || e.key !== 'Enter') return;
+    e.preventDefault();
+    const editor = e.target.closest('.sentence-note-editor');
+    const btn = editor ? editor.querySelector('[data-act="save-sent-note"]') : null;
+    if(btn instanceof HTMLButtonElement) btn.click();
+  });
+
+
+  // Quote export modal
+  if(!state.quoteExport) state.quoteExport = loadQuoteExportSettings();
+  syncQuoteFavoriteOptions();
+  syncTemplateWallActive();
+  const quoteSettingsInputs = [
+    el.quoteTemplate,
+    el.quoteRatio,
+    el.quoteDensity,
+    el.quoteMainFont,
+    el.quoteCjkFont,
+    el.quoteEnhanceContent,
+    el.quoteAnnotationStyle,
+    el.quoteShowTranslation,
+    el.quoteShowAnnotation,
+    el.quoteShowSource,
+    el.quoteShowWatermark,
+    el.quoteWatermarkMode,
+    el.quotePreviewScale
+  ].filter(Boolean);
+  for(const node of quoteSettingsInputs){
+    node.addEventListener('change', renderQuotePreview);
+  }
+  const quoteTextInputs = [
+    el.quoteSourceOverride,
+    el.quoteAnnotationOverride,
+    el.quoteFilenamePattern,
+    el.quoteFontAdjust
+  ].filter(Boolean);
+  for(const node of quoteTextInputs){
+    node.addEventListener('input', renderQuotePreview);
+  }
+  if(el.quoteFontAdjust) el.quoteFontAdjust.addEventListener('input', updateQuoteFontAdjustLabel);
+  if(el.quoteTemplateWall) el.quoteTemplateWall.addEventListener('click', (e)=>{
+    const t = e.target instanceof HTMLElement ? e.target.closest('.quoteTplThumb[data-template]') : null;
+    if(!t || !el.quoteTemplate) return;
+    const value = String(t.getAttribute('data-template') || '').trim();
+    if(!value) return;
+    el.quoteTemplate.value = value;
+    syncTemplateWallActive();
+    renderQuotePreview();
+  });
+  if(el.quotePreset) el.quotePreset.addEventListener('change', ()=>{
+    const next = String(el.quotePreset.value || '').trim();
+    if(!next) return;
+    applyQuotePreset(next);
+  });
+  if(el.quoteSaveFavorite) el.quoteSaveFavorite.addEventListener('click', ()=>{
+    const name = prompt('输入收藏名称（例如：社媒蓝调）');
+    const title = String(name || '').trim();
+    if(!title) return;
+    const list = loadQuoteExportFavorites();
+    const snapshot = getFavoriteSettingsSnapshot();
+    const idx = list.findIndex(it => it.name === title);
+    if(idx >= 0) list[idx] = { name: title, settings: snapshot };
+    else list.unshift({ name: title, settings: snapshot });
+    saveQuoteExportFavorites(list);
+    syncQuoteFavoriteOptions();
+    if(el.quoteFavoritePreset) el.quoteFavoritePreset.value = title;
+    showManagerToast('已收藏当前模板配置', 'success');
+  });
+  if(el.quoteApplyFavorite) el.quoteApplyFavorite.addEventListener('click', ()=>{
+    const target = String(el.quoteFavoritePreset?.value || '').trim();
+    if(!target){
+      showManagerToast('请先选择一个收藏项。');
+      return;
+    }
+    if(!applyQuoteFavoriteByName(target)){
+      showManagerToast('应用失败：未找到该收藏。');
+      return;
+    }
+    showManagerToast('已应用收藏配置', 'success');
+  });
+  if(el.quoteDeleteFavorite) el.quoteDeleteFavorite.addEventListener('click', ()=>{
+    const target = String(el.quoteFavoritePreset?.value || '').trim();
+    if(!target){
+      showManagerToast('请先选择一个收藏项。');
+      return;
+    }
+    const list = loadQuoteExportFavorites().filter(it => it.name !== target);
+    saveQuoteExportFavorites(list);
+    syncQuoteFavoriteOptions();
+    renderQuotePreview();
+    showManagerToast('已删除收藏配置', 'success');
+  });
+  if(el.quoteExportClose) el.quoteExportClose.addEventListener('click', closeQuoteExportModal);
+  if(el.quoteExportCancel) el.quoteExportCancel.addEventListener('click', closeQuoteExportModal);
+  if(el.quoteQuickCopy) el.quoteQuickCopy.addEventListener('click', ()=>el.quoteCopyImage?.click());
+  if(el.quoteQuickExport) el.quoteQuickExport.addEventListener('click', ()=>el.quoteExportSubmit?.click());
+  if(el.quoteRestoreSource) el.quoteRestoreSource.addEventListener('click', ()=>{
+    const sentence = getSentenceById(state.quoteExportSentenceId);
+    if(!sentence) return;
+    if(el.quoteSourceOverride) el.quoteSourceOverride.value = getDefaultSourceText(sentence) || '';
+    renderQuotePreview();
+  });
+  if(el.quoteRestoreAnnotation) el.quoteRestoreAnnotation.addEventListener('click', ()=>{
+    const sentence = getSentenceById(state.quoteExportSentenceId);
+    if(!sentence) return;
+    if(el.quoteAnnotationOverride) el.quoteAnnotationOverride.value = String(sentence?.note || '').trim();
+    renderQuotePreview();
+  });
+  if(el.quoteExportMask) el.quoteExportMask.addEventListener('click', (e)=>{
+    if(e.target === el.quoteExportMask) closeQuoteExportModal();
+  });
+  if(el.quoteExportSubmit) el.quoteExportSubmit.addEventListener('click', async ()=>{
+    if(!state.quoteExportSentenceId) return;
+    const sentence = getSentenceById(state.quoteExportSentenceId);
+    if(!sentence){
+      showManagerToast('导出失败：未找到该金句，请刷新后重试。');
+      return;
+    }
+    try{
+      state.quoteExport = Object.assign({}, readQuoteSettingsFromForm(), readQuoteOverridesFromForm());
+      await exportSentenceToPng(sentence);
+      showManagerToast('已导出 PNG');
+      closeQuoteExportModal();
+    }catch(err){
+      const msg = err?.message || '导出失败，请重试。';
+      showManagerToast(msg);
+      alert(`${msg}\n建议：检查句子内容后重试。`);
+    }
+  });
+  if(el.quoteCopyImage) el.quoteCopyImage.addEventListener('click', async ()=>{
+    if(!state.quoteExportSentenceId) return;
+    const sentence = getSentenceById(state.quoteExportSentenceId);
+    if(!sentence){
+      showManagerToast('复制失败：未找到该金句，请刷新后重试。');
+      return;
+    }
+    try{
+      state.quoteExport = Object.assign({}, readQuoteSettingsFromForm(), readQuoteOverridesFromForm());
+      await copySentenceCardToClipboard(sentence);
+      showManagerToast('已复制图片到剪贴板', 'success');
+    }catch(err){
+      const msg = err?.message || '复制失败，请重试。';
+      showManagerToast(msg);
+      alert(`${msg}\n建议：检查浏览器复制权限或改用导出 PNG。`);
+    }
+  });
+  if(el.quoteBatchExport) el.quoteBatchExport.addEventListener('click', async ()=>{
+    const list = getBatchSentenceList();
+    if(!list.length){
+      showManagerToast('批量导出失败：未选中任何金句。');
+      return;
+    }
+    if(list.length > 1){
+      const ok = confirm(`将按当前配置批量导出 ${list.length} 张卡片，继续吗？`);
+      if(!ok) return;
+    }
+    try{
+      state.quoteExport = Object.assign({}, readQuoteSettingsFromForm(), readQuoteOverridesFromForm());
+      const total = await batchExportSentenceCards(list);
+      showManagerToast(`批量导出完成，共 ${total} 张`, 'success');
+      closeQuoteExportModal();
+    }catch(err){
+      const msg = err?.message || '批量导出失败，请重试。';
+      showManagerToast(msg);
+      alert(`${msg}\n建议：检查文件下载权限或减少批量数量后重试。`);
+    }
+  });
+  document.addEventListener('keydown', (e)=>{
+    if(!quoteModalOpen()) return;
+    const target = e.target;
+    const inTextInput = target instanceof HTMLTextAreaElement
+      || (target instanceof HTMLInputElement && target.type !== 'checkbox' && target.type !== 'button')
+      || target instanceof HTMLSelectElement;
+
+    if((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !inTextInput){
+      e.preventDefault();
+      cycleQuoteTemplate(e.key === 'ArrowRight' ? 1 : -1);
+      return;
+    }
+    if(e.key === 'Enter' && !e.altKey && !e.metaKey && !e.ctrlKey){
+      if(target instanceof HTMLTextAreaElement) return;
+      e.preventDefault();
+      if(e.shiftKey){
+        el.quoteCopyImage?.click();
+      }else{
+        el.quoteExportSubmit?.click();
+      }
+    }
+  });
+  window.addEventListener('resize', ()=>{
+    if(quoteModalOpen()) renderQuotePreview();
+  });
+
+  // Hidden debug hook for quick self-test in DevTools (stage-3 requirement).
+  globalThis.__vbDebugQuoteExport = {
+    openById(id){ openQuoteExportModal(id); },
+    close(){ closeQuoteExportModal(); },
+    render(){ renderQuotePreview(); },
+    exportById: async function(id){
+      const sentence = getSentenceById(id);
+      if(!sentence) throw new Error('Sentence not found');
+      const settings = state.quoteExport || loadQuoteExportSettings();
+      return exportSentenceToPng(sentence, settings);
+    },
+    listIds(){ return (state.db?.collectedSentences || []).map(it => Number(it.createdAt || it.id)).filter(Boolean); },
+  };
+
+  el.btnRefresh.addEventListener('click', ()=>refresh({ explicit: true }));
+  el.btnRefresh2.addEventListener('click', ()=>refresh({ explicit: true }));
 
   el.btnStartReview?.addEventListener('click', ()=>{
     const url = chrome.runtime.getURL('test.html');
@@ -1687,7 +2747,8 @@
     await refresh();
   });
 
-  el.btnBulkDelete.addEventListener('click', async ()=>{
+  el.btnBulkDelete.addEventListener('click', async (e)=>{
+    if(!guardFeature(getEntitlements().bulk_edit, '批量删除仅专业版可用。', e.currentTarget)) return;
     const words = Array.from(state.selectedWords);
     if(!words.length) return;
     const ok1 = confirm(`确认删除已选中的 ${words.length} 个单词吗？`);
@@ -1699,7 +2760,8 @@
     await refresh();
   });
 
-  el.btnBulkCycle.addEventListener('click', async ()=>{
+  el.btnBulkCycle.addEventListener('click', async (e)=>{
+    if(!guardFeature(getEntitlements().bulk_edit, '批量状态切换仅专业版可用。', e.currentTarget)) return;
     const words = Array.from(state.selectedWords);
     if(!words.length) return;
     // cycle: red -> yellow -> green -> red
@@ -1711,7 +2773,8 @@
   });
 
   // Sentences bulk
-  el.btnBulkDeleteSent.addEventListener('click', async ()=>{
+  el.btnBulkDeleteSent.addEventListener('click', async (e)=>{
+    if(!guardFeature(getEntitlements().bulk_edit, '批量删除仅专业版可用。', e.currentTarget)) return;
     const ids = Array.from(state.selectedSent);
     if(!ids.length) return;
     const ok1 = confirm(`确认删除已选中的 ${ids.length} 条金句吗？`);
@@ -1839,10 +2902,31 @@
     return { filename: `${baseName}.json`, mime: 'application/json;charset=utf-8', text: JSON.stringify(out, null, 2) };
   }
 
-  el.btnImport.addEventListener('click', ()=>openModal('import', 'words'));
-  el.btnExport.addEventListener('click', ()=>openModal('export', 'words'));
-  if(el.btnImportSent) el.btnImportSent.addEventListener('click', ()=>openModal('import', 'sentences'));
-  if(el.btnExportSent) el.btnExportSent.addEventListener('click', ()=>openModal('export', 'sentences'));
+  el.btnImport.addEventListener('click', (e)=>{
+    if(!guardFeature(getEntitlements().import_export, '导入仅专业版可用。', e.currentTarget)) return;
+    openModal('import', 'words');
+  });
+  el.btnExport.addEventListener('click', (e)=>{
+    if(!guardFeature(getEntitlements().import_export, '导出仅专业版可用。', e.currentTarget)) return;
+    openModal('export', 'words');
+  });
+  if(el.btnImportSent) el.btnImportSent.addEventListener('click', (e)=>{
+    if(!guardFeature(getEntitlements().import_export, '导入仅专业版可用。', e.currentTarget)) return;
+    openModal('import', 'sentences');
+  });
+  if(el.btnExportSent) el.btnExportSent.addEventListener('click', ()=>{
+    const selected = Array.from(state.selectedSent || []).map(Number).filter(Number.isFinite);
+    let targetId = selected.length ? selected[0] : null;
+    if(!targetId){
+      const visible = getVisibleSentences();
+      targetId = Number(visible?.[0]?.createdAt || visible?.[0]?.id || 0) || null;
+    }
+    if(!targetId){
+      showManagerToast('当前没有可导出的金句，请先收藏或选中一条。');
+      return;
+    }
+    openQuoteExportModal(targetId);
+  });
   el.modalClose.addEventListener('click', closeModal);
   el.btnCancel.addEventListener('click', closeModal);
   el.modalMask.addEventListener('click', (e)=>{ if(e.target === el.modalMask) closeModal(); });
@@ -1894,7 +2978,7 @@
       }else if(fmt === 'txt'){
         if(ioTarget === 'sentences'){
         downloadText('sentences_template.txt', [
-          '# Personal English Asset System Import Template (Sentences)',
+          '# 霍德英语学习管家 Import Template (Sentences)',
           '# Lines starting with # are comments.',
           '# SENTENCE\tTRANSLATION\tNOTE\tURL\tTITLE\tSOURCE_LABEL\tCREATED_AT',
           'This is a sample sentence.\t这是一个示例句子。\t我的批注\thttps://example.com\tExample Title\t导入\t0',
@@ -1902,7 +2986,7 @@
         ].join('\n'));
       }else{
         downloadText('vocab_template.txt', [
-          '# Personal English Asset System Import Template (Words)',
+          '# 霍德英语学习管家 Import Template (Words)',
           '# Lines starting with # are comments.',
           '# WORD\tMEANING\tENGLISH_MEANING\tNOTE\tSTATUS\tREVIEWCOUNT\tPHONETIC_US\tPHONETIC_UK\tAUDIO_US\tAUDIO_UK\tSOURCE_URL\tSOURCE_LABEL\tCREATED_AT\tUPDATED_AT',
           'example\t例子\tan example | a representative case\t我的批注\tyellow\t1\t/ɪgˈzæmpəl/\t/ɪgˈzɑːmpəl/\t\t\thttps://example.com\t导入\t0\t0',
@@ -1980,7 +3064,7 @@
         el.ioText.value = lines.join('\n');
       }else if(fmt === 'txt'){
         const lines = [];
-        lines.push(`# Personal English Asset System Export (Sentences)`);
+        lines.push(`# 霍德英语学习管家 Export (Sentences)`);
         lines.push(`# version: ${ver}`);
         lines.push(`# exportedAt: ${new Date().toISOString()}`);
         lines.push('');
@@ -2003,7 +3087,7 @@
       el.ioText.value = toCSV(words);
     }else if(fmt === 'txt'){
       const lines = [];
-      lines.push(`# Personal English Asset System Export (Words)`);
+      lines.push(`# 霍德英语学习管家 Export (Words)`);
       lines.push(`# version: ${ver}`);
       lines.push(`# exportedAt: ${new Date().toISOString()}`);
       lines.push('');
@@ -2041,15 +3125,17 @@
     if(el.ioMode.value === 'export') generateExportPreview();
   });
 
-  el.btnOk.addEventListener('click', async ()=>{
+  el.btnOk.addEventListener('click', async (e)=>{
     const mode = el.ioMode.value;
     const fmt = el.ioFormat.value || 'json';
     if(mode === 'export'){
+      if(!guardFeature(getEntitlements().import_export, '导出仅专业版可用。', e.currentTarget)) return;
       const out = buildExport(fmt);
       downloadText(out.filename, out.text);
       closeModal();
       return;
     }
+    if(!guardFeature(getEntitlements().import_export, '导入仅专业版可用。', e.currentTarget)) return;
 
     // import
     const text = (el.ioText.value||'').trim();
@@ -2294,6 +3380,7 @@
     if(el.limitInfo) el.limitInfo.textContent = 'Personal English Asset System';
   }catch(e){}
   await refresh();
+  setTab(state.tab === 'sentences' ? 'sentences' : 'words');
 })();
 
 
