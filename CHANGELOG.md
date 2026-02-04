@@ -1,8 +1,13 @@
 ## 2.53.70 (2026-02-03)
 - Rebrand: Unified product name to `HORD English Companion` across popup/manager/options/content/manifest and docs.
-- Rebrand: Unified slogan to `OWN YOUR WORDS` in UI and export brand copy.
+- Rebrand: Unified slogan to `Yesterday, You Said Tomorrow` in UI and export brand copy.
 - Tweak: Updated release zip/output naming and quote card export default filename prefix to the new brand.
 - Scope: `manifest.json`, `popup.html`, `manager.html`, `manager.js`, `options.html`, `content.js`, `README.md`, `export-card.js`, `quote_card_export.js`, `scripts/release_zip.sh`, `CHANGELOG.md`.
+
+## 2.53.70 (2026-02-03)
+- Tweak: BYOK 设置页（浅色模式）降低“过白/刺眼”观感：背景与卡片/输入框改为更柔和的浅紫灰系渐变与半透明 surface，减少纯白占比但不改任何功能逻辑。
+- Tweak: 管理页品牌标题区文案结构优化（更清晰的中英文品牌层级 + 标语），版本号仍由 `manifest.json` 自动注入。
+- Scope: `options.html`, `manager.html`, `README.md`, `manifest.json`, `CHANGELOG.md`.
 
 ## 2.53.69 (2026-02-03)
 - Tweak: 复习会话改为“仅提示不加题”模式：低分与错题仅给补充复习建议，不再自动把题量从设定值（如 20）扩展到更多。
@@ -126,19 +131,19 @@
 
 ## 2.53.46 (2026-02-03)
 - Files changed: manager.html, manager.js, styles.css, quote_card_export.js, manifest.json, CHANGELOG.md
-- Change: Added sentence-level “导出卡片” flow in manager with canvas PNG export modal (Light/Dark/Academic templates, 1:1 & 4:5 ratios, translation/source/watermark switches, preview, and localStorage persistence); added per-card export action and shared toast/error feedback; extracted export rendering into standalone `quote_card_export.js`; updated brand signature placement to `OWN YOUR WORDS` under `HORD English Companion` and removed right-side gold artistic motto.
+- Change: Added sentence-level “导出卡片” flow in manager with canvas PNG export modal (Light/Dark/Academic templates, 1:1 & 4:5 ratios, translation/source/watermark switches, preview, and localStorage persistence); added per-card export action and shared toast/error feedback; extracted export rendering into standalone `quote_card_export.js`; updated brand signature placement to `Yesterday, You Said Tomorrow` under `HORD English Companion` and removed right-side gold artistic motto.
 - Risk: Medium-low; manager UI gained one new modal and one new per-item action, no existing word/review data logic changed.
 - Rollback: Restore listed files from 2.53.45 and bump manifest version.
 
 ## 2.53.45 (2026-02-03)
 - Files changed: manager.html, popup.html, manifest.json, CHANGELOG.md
-- Change: Added visible right-side gold artistic header motto “OWN YOUR WORDS”; rebuilt manager search expansion as an absolute floating field to prevent toolbar overlap and misalignment, with responsive expand width (wide 360px / narrow 260px); further compacted popup layout spacing; compressed top six stat cards to remove extra bottom blank space.
+- Change: Added visible right-side gold artistic header motto “Yesterday, You Said Tomorrow”; rebuilt manager search expansion as an absolute floating field to prevent toolbar overlap and misalignment, with responsive expand width (wide 360px / narrow 260px); further compacted popup layout spacing; compressed top six stat cards to remove extra bottom blank space.
 - Risk: Low; UI/CSS-only adjustments, no data or business-logic changes.
 - Rollback: Restore listed files from 2.53.44 and bump manifest version.
 
 ## 2.53.44 (2026-02-03)
 - Files changed: manager.html, popup.html, manifest.json, CHANGELOG.md
-- Change: Added right-side gold artistic hero text “OWN YOUR WORDS”; fixed manager search expansion to responsive in-flow behavior (wide 360px / narrow 260px) to avoid overlap and toolbar misalignment; further tightened popup spacing for a denser layout; compressed top six stat cards again to remove extra bottom whitespace.
+- Change: Added right-side gold artistic hero text “Yesterday, You Said Tomorrow”; fixed manager search expansion to responsive in-flow behavior (wide 360px / narrow 260px) to avoid overlap and toolbar misalignment; further tightened popup spacing for a denser layout; compressed top six stat cards again to remove extra bottom whitespace.
 - Risk: Low; UI-only changes.
 - Rollback: Restore listed files from 2.53.43 and bump manifest version.
 
@@ -168,7 +173,7 @@
 
 ## 2.53.39 (2026-02-03)
 - Files changed: content.js, popup.html, options.html, manager.html, manifest.json, CHANGELOG.md
-- Change: Moved in-page note chip to between status buttons and definition sections; removed top divider lines above status row and footer jump links; reduced blank spacing between action row and Chinese definitions; aligned popup settings button with title row and changed subtitle to “OWN YOUR WORDS”; restored emoji labels across popup/options/manager/content UI text.
+- Change: Moved in-page note chip to between status buttons and definition sections; removed top divider lines above status row and footer jump links; reduced blank spacing between action row and Chinese definitions; aligned popup settings button with title row and changed subtitle to “Yesterday, You Said Tomorrow”; restored emoji labels across popup/options/manager/content UI text.
 - Risk: Low; UI text/style only, no functional logic changed.
 - Rollback: Restore listed files from 2.53.38 and bump manifest version.
 

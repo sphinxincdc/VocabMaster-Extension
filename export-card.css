@@ -203,6 +203,9 @@ body.quote-export-open > .container{
   color:#4a5575;
   margin-bottom:10px;
 }
+.quoteContentOptional{
+  margin-top:2px;
+}
 
 .quoteFavActions .btn{
   padding:7px 10px;

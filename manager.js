@@ -22,9 +22,12 @@
   }
 
   function applyPageTheme(db){
-    const dark = computeThemeDark(db || {});
+    const mode = resolveThemeMode(db || {});
+    const dark = mode === 'dark' || (mode === 'auto' && systemDark());
     document.documentElement.classList.toggle('vb-dark', dark);
     document.body.classList.toggle('vb-force-dark', dark);
+    // Explicit light mode should suppress any prefers-color-scheme dark overrides.
+    document.body.classList.toggle('vb-force-light', mode === 'light');
   }
 
 
@@ -35,7 +38,7 @@
     const verEl = document.getElementById('ver');
     const limitEl = document.getElementById('limitInfo');
     if (verEl) verEl.textContent = `v${v}`;
-    if (limitEl) limitEl.textContent = 'OWN YOUR WORDS';
+    if (limitEl) limitEl.textContent = 'Yesterday, You Said Tomorrow';
   } catch(e) {}
 
   applyPageTheme({});
@@ -72,6 +75,9 @@
     badgeRow: $('badgeRow'),
     tabWords: $('tabWords'),
     tabSentences: $('tabSentences'),
+    btnHeroBrandAction: $('btnHeroBrandAction'),
+    btnHeroTopAction: $('btnHeroTopAction'),
+    btnHeroProAction: $('btnHeroProAction'),
     btnStartReview: $('btnStartReview'),
     statCards: $('statCards'),
 
@@ -186,6 +192,104 @@
     pendingQuoteExport: null,
   };
 
+  const stickyToolbarState = {
+    bound: false,
+    rafId: 0,
+  };
+
+  function ensureToolbarAnchors(toolbar){
+    if(!toolbar) return { sentinel:null, spacer:null };
+    let sentinel = toolbar.previousElementSibling;
+    if(!(sentinel && sentinel.classList && sentinel.classList.contains('toolbar-sticky-sentinel'))){
+      sentinel = document.createElement('div');
+      sentinel.className = 'toolbar-sticky-sentinel';
+      sentinel.style.height = '0px';
+      sentinel.style.margin = '0';
+      sentinel.style.padding = '0';
+      toolbar.insertAdjacentElement('beforebegin', sentinel);
+    }
+    let spacer = toolbar.nextElementSibling;
+    if(!(spacer && spacer.classList && spacer.classList.contains('toolbar-sticky-spacer'))){
+      spacer = document.createElement('div');
+      spacer.className = 'toolbar-sticky-spacer';
+      spacer.style.display = 'none';
+      spacer.style.height = '0px';
+      toolbar.insertAdjacentElement('afterend', spacer);
+    }
+    return { sentinel, spacer };
+  }
+
+  function clearFixedToolbar(toolbar){
+    if(!toolbar) return;
+    toolbar.classList.remove('toolbar-fixed-live');
+    toolbar.style.position = '';
+    toolbar.style.top = '';
+    toolbar.style.left = '';
+    toolbar.style.width = '';
+    toolbar.style.zIndex = '';
+    toolbar.style.marginTop = '';
+    const spacer = toolbar.nextElementSibling;
+    if(spacer && spacer.classList && spacer.classList.contains('toolbar-sticky-spacer')){
+      spacer.style.display = 'none';
+      spacer.style.height = '0px';
+    }
+  }
+
+  function getActiveToolbar(){
+    return state.tab === 'sentences' ? el.toolbarSentences : el.toolbarWords;
+  }
+
+  function updateStickyToolbarsNow(){
+    const scrollTop = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    const activeToolbar = getActiveToolbar();
+    [el.toolbarWords, el.toolbarSentences].forEach((toolbar)=>{
+      if(!toolbar) return;
+      const visible = toolbar.style.display !== 'none';
+      if(toolbar !== activeToolbar || !visible){
+        clearFixedToolbar(toolbar);
+        return;
+      }
+      const { sentinel, spacer } = ensureToolbarAnchors(toolbar);
+      if(!sentinel || !spacer) return;
+      const pinTop = 8;
+      const sentinelTop = sentinel.getBoundingClientRect().top + scrollTop;
+      const shouldFix = (scrollTop + pinTop) >= sentinelTop;
+      if(!shouldFix){
+        clearFixedToolbar(toolbar);
+        return;
+      }
+      const host = toolbar.parentElement || toolbar;
+      const hostRect = host.getBoundingClientRect();
+      const width = Math.max(320, Math.floor(hostRect.width));
+      const left = Math.max(8, Math.floor(hostRect.left));
+      toolbar.classList.add('toolbar-fixed-live');
+      toolbar.style.position = 'fixed';
+      toolbar.style.top = `${pinTop}px`;
+      toolbar.style.left = `${left}px`;
+      toolbar.style.width = `${width}px`;
+      toolbar.style.zIndex = '5000';
+      toolbar.style.marginTop = '0';
+      spacer.style.display = 'block';
+      spacer.style.height = `${toolbar.offsetHeight}px`;
+    });
+  }
+
+  function scheduleStickyToolbarsUpdate(){
+    if(stickyToolbarState.rafId) return;
+    stickyToolbarState.rafId = requestAnimationFrame(()=>{
+      stickyToolbarState.rafId = 0;
+      updateStickyToolbarsNow();
+    });
+  }
+
+  function initStickyToolbarBehavior(){
+    if(stickyToolbarState.bound) return;
+    stickyToolbarState.bound = true;
+    window.addEventListener('scroll', scheduleStickyToolbarsUpdate, { passive:true });
+    window.addEventListener('resize', scheduleStickyToolbarsUpdate);
+    scheduleStickyToolbarsUpdate();
+  }
+
   function getInitialTabFromUrl(){
     try{
       const q = new URLSearchParams(String(location.search || ''));
@@ -240,6 +344,43 @@
 
   function getEntitlements(){
     return normalizeEntitlements(state.entitlements);
+  }
+
+  function isProByEntitlements(ent){
+    const e = normalizeEntitlements(ent || {});
+    return !!(
+      e.import_export
+      || e.bulk_edit
+      || e.quote_advanced_settings
+      || e.review_mode === 'advanced'
+      || Number(e.word_limit || 0) > 200
+    );
+  }
+
+  function openOfficialSite(){
+    const url = 'https://vocabmaster-2my.pages.dev/';
+    try{
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }catch(_){
+      location.href = url;
+    }
+  }
+
+  function renderHeroProCta(){
+    if(!el.btnHeroProAction) return;
+    const isPro = isProByEntitlements(getEntitlements());
+    el.btnHeroProAction.classList.toggle('pro', isPro);
+    el.btnHeroProAction.classList.toggle('primary', !isPro);
+    el.btnHeroProAction.disabled = false;
+    if(isPro){
+      el.btnHeroProAction.textContent = '你已经是专业版，可享受全部功能';
+      el.btnHeroProAction.title = '当前账号已是专业版权益';
+      el.btnHeroProAction.dataset.action = 'pro';
+    }else{
+      el.btnHeroProAction.textContent = '升级为专业版';
+      el.btnHeroProAction.title = '前往官网升级专业版';
+      el.btnHeroProAction.dataset.action = 'upgrade';
+    }
   }
 
   function guardFeature(enabled, message, anchorEl=null){
@@ -992,6 +1133,7 @@
         ? 'HORD English Companion · Pro'
         : 'HORD English Companion · Free';
     }
+    renderHeroProCta();
   }
 
   function normalizeWordStatus(db, w){
@@ -1484,6 +1626,7 @@
     el.toolbarSentences.style.display = isWords ? 'none' : 'flex';
     el.sentWrap.style.display = isWords ? 'none' : 'block';
     render();
+    scheduleStickyToolbarsUpdate();
   }
 
   function computeStats(db){
@@ -2733,6 +2876,21 @@
   el.btnRefresh.addEventListener('click', ()=>refresh({ explicit: true }));
   el.btnRefresh2.addEventListener('click', ()=>refresh({ explicit: true }));
 
+  el.btnHeroBrandAction?.addEventListener('click', ()=>{
+    openOfficialSite();
+  });
+  el.btnHeroTopAction?.addEventListener('click', ()=>{
+    openOfficialSite();
+  });
+  el.btnHeroProAction?.addEventListener('click', ()=>{
+    const isPro = isProByEntitlements(getEntitlements());
+    if(isPro){
+      showManagerToast('你已经是专业版，可享受全部功能。', 'success');
+      return;
+    }
+    openOfficialSite();
+  });
+
   el.btnStartReview?.addEventListener('click', ()=>{
     const url = chrome.runtime.getURL('test.html');
     window.open(url, '_blank');
@@ -3377,10 +3535,12 @@
     const man = chrome.runtime.getManifest();
     if(el.ver) el.ver.textContent = `v${man.version}`;
     if(el.realTimeStat) el.realTimeStat.textContent = '';
-    if(el.limitInfo) el.limitInfo.textContent = 'OWN YOUR WORDS';
+    if(el.limitInfo) el.limitInfo.textContent = 'Yesterday, You Said Tomorrow';
   }catch(e){}
   await refresh();
   setTab(state.tab === 'sentences' ? 'sentences' : 'words');
+  initStickyToolbarBehavior();
+  scheduleStickyToolbarsUpdate();
 })();
 
 

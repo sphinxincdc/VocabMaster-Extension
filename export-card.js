@@ -2,7 +2,7 @@
   'use strict';
 
   const BRAND_NAME = 'HORD';
-  const BRAND_TAGLINE = 'OWN YOUR WORDS';
+  const BRAND_TAGLINE = 'Yesterday, You Said Tomorrow';
 
   const FONT_STACK_QUOTE = '"Inter","Segoe UI","PingFang SC","Microsoft YaHei",sans-serif';
   const FONT_STACK_BODY = '"Noto Sans SC","PingFang SC","Microsoft YaHei","Segoe UI",sans-serif';
@@ -66,7 +66,7 @@
   const RATIO_LAYOUT = {
     '4:5': { quoteMaxLines: 6, translationMaxLines: 4, annotationMaxLines: 3, sourceMaxLines: 2, paddingFactor: 0.045, quoteBaseDiv: 12, extraBottom: 0.02 },
     '1:1': { quoteMaxLines: 5, translationMaxLines: 3, annotationMaxLines: 3, sourceMaxLines: 2, paddingFactor: 0.05, quoteBaseDiv: 12, extraBottom: 0.01 },
-    '9:16': { quoteMaxLines: 7, translationMaxLines: 4, annotationMaxLines: 3, sourceMaxLines: 2, paddingFactor: 0.04, quoteBaseDiv: 12, extraBottom: 0.05 },
+    '9:16': { quoteMaxLines: 8, translationMaxLines: 3, annotationMaxLines: 3, sourceMaxLines: 1, paddingFactor: 0.037, quoteBaseDiv: 11.2, extraBottom: 0.02 },
     '16:9': { quoteMaxLines: 4, translationMaxLines: 3, annotationMaxLines: 2, sourceMaxLines: 2, paddingFactor: 0.045, quoteBaseDiv: 14, extraBottom: 0.01 },
     '3:4': { quoteMaxLines: 6, translationMaxLines: 4, annotationMaxLines: 3, sourceMaxLines: 2, paddingFactor: 0.045, quoteBaseDiv: 12, extraBottom: 0.02 },
   };
@@ -317,16 +317,24 @@
   function toReadableSource(text){
     const raw = String(text || '').trim();
     if(!raw) return '';
+    const middleEllipsis = (input, max = 52)=>{
+      const s = String(input || '').trim();
+      if(s.length <= max) return s;
+      const head = Math.max(12, Math.floor(max * 0.58));
+      const tail = Math.max(8, max - head - 3);
+      return `${s.slice(0, head)}...${s.slice(-tail)}`;
+    };
     try{
       const u = new URL(raw);
       const host = u.hostname.replace(/^www\./i, '');
       const path = (u.pathname || '/').replace(/\/+$/, '');
-      if(!path || path === '/') return host;
+      if(!path || path === '/') return middleEllipsis(host, 46);
       const seg = path.split('/').filter(Boolean);
-      if(seg.length <= 2) return `${host}${path}`;
-      return `${host}/${seg[0]}/.../${seg[seg.length - 1]}`;
+      if(seg.length <= 2) return middleEllipsis(`${host}${path}`, 52);
+      const last = String(seg[seg.length - 1] || '').slice(0, 18);
+      return middleEllipsis(`${host}/${seg[0]}/.../${last}`, 52);
     }catch(_){
-      return raw;
+      return middleEllipsis(raw, 48);
     }
   }
 
@@ -691,6 +699,7 @@
 
   function makeLayoutEngine(ctx, canvasWidth, canvasHeight, settings, template, modules){
     const ratioCfg = RATIO_LAYOUT[settings.ratio] || RATIO_LAYOUT['1:1'];
+    const isTall = settings.ratio === '9:16';
     const densityMap = {
       compact: { width: 0.92, space: 0.9 },
       standard: { width: 1, space: 1 },
@@ -713,11 +722,11 @@
     // Larger manual font-adjust should also give text more horizontal room,
     // otherwise long quotes get stuck at tiny sizes.
     const widthBoost = clamp((boost * 0.025) + Math.max(0, (quoteLen - 180) / 1800), 0, 0.22);
-    const effectiveWidthRatio = clamp(((template.contentWidthRatio || 0.86) * density.width) + widthBoost, 0.78, 0.97);
+    const effectiveWidthRatio = clamp((((template.contentWidthRatio || 0.86) * density.width * (isTall ? 0.9 : 1)) + widthBoost), 0.72, 0.97);
     const contentInnerWidth = contentWidth * effectiveWidthRatio;
     const contentX = padding + (contentWidth - contentInnerWidth) / 2;
 
-    const spacingBase = Math.round(clamp(contentHeight * 0.022, 12, 34) * (template.spacingScale || 1) * density.space);
+    const spacingBase = Math.round(clamp(contentHeight * 0.022, 12, 34) * (template.spacingScale || 1) * density.space * (isTall ? 1.1 : 1));
     const spacing = {
       quoteToTranslation: spacingBase,
       translationToAnnotation: spacingBase,
@@ -728,7 +737,7 @@
     const footerSize = clamp(calculateFontSize('footer', contentInnerWidth, contentHeight) * 0.30, 14, 18);
     const footerLineHeight = Math.round(footerSize * 1.25);
 
-    const quoteMaxSize = clamp((Math.min(canvasWidth / 10, 72) * (quoteStyle.quoteScale || 1)) + settings.fontAdjust, 18, 72);
+    const quoteMaxSize = clamp((Math.min(canvasWidth / 10, 72) * (quoteStyle.quoteScale || 1)) + settings.fontAdjust + (isTall ? 4 : 0), 18, 74);
     // Let positive font-adjust truly "force bigger text":
     // when space is not enough, prefer truncation over shrinking below the adjusted floor.
     const quoteMinSize = clamp(18 + (boost * 2), 18, 50);
@@ -843,9 +852,9 @@
     const opticalAdjust = quoteFit.size * 0.12;
     const freeSpace = Math.max(0, contentHeight - totalContentHeight);
     // Keep content visually centered but slightly top-biased to avoid "large blank top/bottom" feeling.
-    const baseStartY = padding + (freeSpace * (boost >= 4 ? 0.34 : 0.42));
+    const baseStartY = padding + (freeSpace * (boost >= 4 ? 0.34 : (isTall ? 0.36 : 0.42)));
     const maxStartY = padding + Math.max(0, contentHeight - totalContentHeight);
-    const startY = clamp(baseStartY + (opticalAdjust * 0.85), padding + 4, maxStartY);
+    const startY = clamp(baseStartY + (opticalAdjust * 0.85) + (isTall ? contentHeight * 0.03 : 0), padding + 4, maxStartY);
 
     const layoutDebug = {
       canvas: { w: canvasWidth, h: canvasHeight, padding },
@@ -926,6 +935,7 @@
     if(!mode) return;
     const wm = template.watermarkStyle || {};
     const color = wm.color || '#7c3aed';
+    const inset = Math.max(24, Math.round(Math.min(card.w, card.h) * 0.035));
 
     if(mode === 'backgroundLogo'){
       ctx.save();
@@ -934,7 +944,7 @@
       ctx.font = `800 ${Math.round(card.w * 0.16)}px ${stacks.quote || FONT_STACK_QUOTE}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(BRAND_NAME, card.x + card.w / 2, card.y + card.h * 0.62);
+      ctx.fillText(BRAND_NAME, card.x + card.w / 2, card.y + card.h * 0.6);
       ctx.restore();
       return;
     }
@@ -947,7 +957,7 @@
       ctx.font = `800 ${sz}px ${stacks.quote || FONT_STACK_QUOTE}`;
       ctx.textAlign = 'right';
       ctx.textBaseline = 'bottom';
-      ctx.fillText(BRAND_NAME, card.x + card.w - 18, card.y + card.h - 16);
+      ctx.fillText(BRAND_NAME, card.x + card.w - inset, card.y + card.h - inset);
       ctx.restore();
       return;
     }
@@ -957,13 +967,11 @@
     ctx.fillStyle = color;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
-    const titleSize = Math.max(14, Math.round(quoteSize * 0.25));
-    const subSize = Math.max(11, Math.round(titleSize * 0.56));
-    const baseY = card.y + card.h - 22;
+    const titleSize = Math.max(12, Math.round(quoteSize * 0.22));
+    const baseY = card.y + card.h - inset;
+    // Signature mode uses a compact mono watermark so footer brand line remains primary.
     ctx.font = `700 ${titleSize}px ${stacks.quote || FONT_STACK_QUOTE}`;
-    ctx.fillText(BRAND_NAME, card.x + card.w / 2, baseY - subSize - 2);
-    ctx.font = `600 ${subSize}px ${(stacks.brand || FONT_STACK_BRAND)}`;
-    ctx.fillText(BRAND_TAGLINE, card.x + card.w / 2, baseY);
+    ctx.fillText(BRAND_NAME, card.x + card.w / 2, baseY);
     ctx.restore();
   }
 

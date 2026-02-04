@@ -10,17 +10,17 @@
     body{
       margin:0;
       background:
-        radial-gradient(1000px 420px at 8% -8%, rgba(99,102,241,.12), transparent 58%),
-        radial-gradient(760px 360px at 105% -2%, rgba(14,165,233,.06), transparent 56%),
-        linear-gradient(180deg,#dde3ef 0%, #d4dcea 100%);
+        radial-gradient(1000px 420px at 8% -8%, rgba(71,85,105,.10), transparent 58%),
+        radial-gradient(760px 360px at 105% -2%, rgba(100,116,139,.08), transparent 56%),
+        linear-gradient(180deg,#dde1e7 0%, #d4d9e1 100%);
       color:var(--vb-text);
       font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial;
     }
     .wrap{max-width:1080px;margin:0 auto;padding:18px 14px 40px;}
     .wrap,.wrap *{box-sizing:border-box}
     .hd{
-      background:linear-gradient(180deg, rgba(232,238,248,.94), rgba(224,232,245,.92));
-      border:1px solid rgba(99,102,241,.22);
+      background:linear-gradient(180deg, rgba(236,240,245,.94), rgba(229,234,241,.92));
+      border:1px solid rgba(100,116,139,.24);
       border-radius:18px;
       padding:var(--vb-card-pad);
       box-shadow:0 10px 24px rgba(15,23,42,.08);
@@ -30,8 +30,8 @@
     .hd p{margin:8px 0 0;color:var(--vb-muted);line-height:1.5}
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;min-width:0}
     .card{
-      background:linear-gradient(180deg, rgba(232,238,248,.92), rgba(224,232,245,.90));
-      border:1px solid rgba(99,102,241,.20);
+      background:linear-gradient(180deg, rgba(236,240,245,.92), rgba(229,234,241,.90));
+      border:1px solid rgba(100,116,139,.20);
       border-radius:18px;
       padding:var(--vb-card-pad);
       box-shadow:0 8px 22px rgba(15,23,42,.07);
@@ -45,7 +45,7 @@
     input{
       border-radius:var(--vb-r-input);
       border:1px solid rgba(100,116,139,.34);
-      background:rgba(236,242,251,.78);
+      background:rgba(238,242,247,.84);
       color:var(--vb-text);
       padding:10px 12px;
       font-size:var(--vb-fs-body);
@@ -55,7 +55,7 @@
     textarea{
       border-radius:var(--vb-r-input);
       border:1px solid rgba(100,116,139,.34);
-      background:rgba(236,242,251,.78);
+      background:rgba(238,242,247,.84);
       color:var(--vb-text);
       padding:10px 12px;
       font-size:12px;
@@ -65,9 +65,9 @@
       min-height:84px;
       resize:vertical;
     }
-    .actions{display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap;position:sticky;bottom:10px;z-index:20;background:linear-gradient(180deg, rgba(228,236,248,.96), rgba(219,229,243,.94));padding:8px;border:1px solid rgba(99,102,241,.22);border-radius:16px;box-shadow:0 10px 22px rgba(15,23,42,.10);backdrop-filter:blur(4px)}
-    .btn{border:1px solid rgba(100,116,139,.34);border-radius:var(--vb-r-btn);padding:10px 12px;font-weight:900;cursor:pointer;background:rgba(234,241,250,.88);color:var(--vb-text)}
-    .btn.secondary{background:rgba(230,238,249,.86);color:var(--vb-text);border:1px solid rgba(100,116,139,.34)}
+    .actions{display:flex;gap:10px;margin-top:12px;align-items:center;flex-wrap:wrap;position:sticky;bottom:10px;z-index:20;background:linear-gradient(180deg, rgba(232,237,243,.96), rgba(224,230,238,.94));padding:8px;border:1px solid rgba(100,116,139,.22);border-radius:16px;box-shadow:0 10px 22px rgba(15,23,42,.10);backdrop-filter:blur(4px)}
+    .btn{border:1px solid rgba(100,116,139,.34);border-radius:var(--vb-r-btn);padding:10px 12px;font-weight:900;cursor:pointer;background:rgba(237,241,246,.90);color:var(--vb-text)}
+    .btn.secondary{background:rgba(231,236,243,.88);color:var(--vb-text);border:1px solid rgba(100,116,139,.34)}
     .btn.mini,.testBtn{padding:6px 10px;font-size:12px;border-radius:999px;min-width:74px;justify-content:center}
     #save{border:0;background:var(--vb-brand-grad);color:#fff;box-shadow:var(--vb-shadow-md)}
     .status{font-size:var(--vb-fs-cap);color:var(--vb-muted)}
@@ -79,16 +79,16 @@
     .testBtn[data-state="fail"]{color:#991b1b;border-color:#fca5a5;background:#fef2f2}
     .inputWrap{position:relative;width:100%;min-width:0}
     .inputWrap input{display:block;width:100%;max-width:100%;min-width:0;padding-right:44px;box-sizing:border-box}
-    .eyeBtn{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:1px solid rgba(100,116,139,.34);background:rgba(228,237,248,.92);color:var(--vb-muted);width:28px;height:28px;border-radius:999px;cursor:pointer;font-size:13px;line-height:1;display:inline-flex;align-items:center;justify-content:center;padding:0;min-width:28px;flex:0 0 28px}
+    .eyeBtn{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:1px solid rgba(100,116,139,.34);background:rgba(232,238,246,.94);color:var(--vb-muted);width:28px;height:28px;border-radius:999px;cursor:pointer;font-size:13px;line-height:1;display:inline-flex;align-items:center;justify-content:center;padding:0;min-width:28px;flex:0 0 28px}
     .authActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
     .authState{margin-top:10px;padding:10px;border-radius:12px;border:1px solid var(--vb-border);background:rgba(15,23,42,.03);font-size:12px;line-height:1.5;white-space:pre-wrap}
     .authState.ok{border-color:#86efac;background:#ecfdf5;color:#166534}
     .authState.warn{border-color:#fcd34d;background:#fffbeb;color:#92400e}
     .authState.err{border-color:#fca5a5;background:#fef2f2;color:#991b1b}
     .checkInline{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--vb-muted)}
-    input:focus,textarea:focus{border-color:rgba(99,102,241,.45);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
-    .btn:hover{border-color:rgba(99,102,241,.34)}
-    .testBtn[data-state="idle"]{background:rgba(228,236,248,.94)}
+    input:focus,textarea:focus{border-color:rgba(71,85,105,.42);box-shadow:0 0 0 3px rgba(100,116,139,.14)}
+    .btn:hover{border-color:rgba(71,85,105,.38)}
+    .testBtn[data-state="idle"]{background:rgba(232,237,244,.94)}
     body.vb-force-dark .actions{background:var(--vb-surface);border-color:var(--vb-border)}
     body.vb-force-dark .testBtn[data-state="success"]{color:#86efac;background:rgba(22,101,52,.28);border-color:#166534}
     body.vb-force-dark .testBtn[data-state="fail"]{color:#fecaca;background:rgba(153,27,27,.30);border-color:#7f1d1d}

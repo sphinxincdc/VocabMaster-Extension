@@ -2,10 +2,10 @@
 
 HORD English Companion 是一款面向长期学习的英语词汇管理 Chrome 插件：在阅读中即时捕捉生词，支持批注与复习节奏管理，并提供生词本管理页与可视化统计，帮助你把零散输入沉淀为可积累的语言资产。
 
-> OWN YOUR WORDS
+> Yesterday, You Said Tomorrow
 
 ## 最新功能（2.53.70）
-- **品牌统一升级**：全站名称统一为 `HORD English Companion`，统一 slogan 为 `OWN YOUR WORDS`
+- **品牌统一升级**：全站名称统一为 `HORD English Companion`，统一 slogan 为 `Yesterday, You Said Tomorrow`
 - **复习体验优化**：评分区与状态提示更稳定，支持更顺滑的键盘复习流程（`Space / 1 / 2 / 3`）
 - **会话反馈增强**：复习过程显示即时反馈，结束后可查看会话复盘与学习建议
 - **句卡导出能力**：支持句子导出卡片（模板、比例、翻译/批注/水印开关）

@@ -147,53 +147,30 @@ async function addWordOrSentence(text, translation){
 
   applyPopupTheme(getEffectiveDark(themeModeCurrent));
 
-  function getThemeModeLabel(mode){
-    if(mode === 'dark') return '始终深色';
-    if(mode === 'light') return '始终浅色';
-    return '跟随系统';
-  }
-
   function getThemeModeHint(mode){
-    if(mode === 'dark') return '当前：始终深色（不跟随系统）';
-    if(mode === 'light') return '当前：始终浅色（不跟随系统）';
-    return '当前：跟随系统';
-  }
-
-  function getNextThemeMode(mode){
-    const modes = ['auto', 'dark', 'light'];
-    const i = modes.indexOf(mode);
-    return modes[(i + 1) % modes.length];
-  }
-
-  function getBlockModeLabel(mode){
-    if(mode === 'page') return '本页停用';
-    if(mode === 'domain') return '本域名停用';
-    if(mode === 'global') return '全部停用';
-    return '正常运行';
+    if(mode === 'dark') return '当前：夜间';
+    if(mode === 'light') return '当前：日间';
+    return '当前：自动';
   }
 
   function getBlockModeHint(mode){
-    if(mode === 'page') return `当前页已停用：${pKey ? (pKey.length > 38 ? pKey.slice(0, 38) + '…' : pKey) : '此页'}`;
-    if(mode === 'domain') return `当前域名已停用：${dKey || '此域名'}`;
-    if(mode === 'global') return '全部网页已停用（点击右侧切换）';
-    return '正常运行（点击右侧切换：此页/域名/全部）';
-  }
-
-  function getNextBlockMode(mode){
-    const modes = ['off'];
-    if(pKey) modes.push('page');
-    if(dKey) modes.push('domain');
-    modes.push('global');
-    const i = modes.indexOf(mode);
-    return modes[(i + 1) % modes.length];
+    if(mode === 'page') return `当前：本页停用${pKey ? `（${pKey.length > 20 ? pKey.slice(0, 20) + '…' : pKey}）` : ''}`;
+    if(mode === 'domain') return `当前：此域名停用${dKey ? `（${dKey}）` : ''}`;
+    if(mode === 'global') return '当前：完全关闭';
+    return '当前：正常运行';
   }
 
   function paintToggleRows(){
     const setOn = (rowId, on)=>{ const el = $(rowId); if(el) el.dataset.on = on ? '1' : '0'; };
     if($('rowThemeMode')) setOn('rowThemeMode', themeModeCurrent === 'dark');
-    if($('btnThemeMode')){
-      $('btnThemeMode').dataset.mode = themeModeCurrent;
-      $('btnThemeMode').textContent = getThemeModeLabel(themeModeCurrent);
+    const themeButtons = [
+      { id: 'btnThemeLight', mode: 'light' },
+      { id: 'btnThemeDark', mode: 'dark' },
+      { id: 'btnThemeAuto', mode: 'auto' },
+    ];
+    for(const item of themeButtons){
+      const el = $(item.id);
+      if(el) el.dataset.active = themeModeCurrent === item.mode ? '1' : '0';
     }
     if($('themeModeHint')){
       const hint = getThemeModeHint(themeModeCurrent);
@@ -201,9 +178,14 @@ async function addWordOrSentence(text, translation){
       $('themeModeHint').title = hint;
     }
     setOn('rowBlockMode', blockMode !== 'off');
-    if($('btnBlockMode')){
-      $('btnBlockMode').dataset.mode = blockMode;
-      $('btnBlockMode').textContent = getBlockModeLabel(blockMode);
+    const blockButtons = [
+      { id: 'btnBlockPage', mode: 'page' },
+      { id: 'btnBlockDomain', mode: 'domain' },
+      { id: 'btnBlockGlobal', mode: 'global' },
+    ];
+    for(const item of blockButtons){
+      const el = $(item.id);
+      if(el) el.dataset.active = blockMode === item.mode ? '1' : '0';
     }
     if($('blockModeHint')){
       const hint = getBlockModeHint(blockMode);
@@ -246,12 +228,28 @@ async function addWordOrSentence(text, translation){
     paintToggleRows();
   }
 
-  if($('btnThemeMode')) $('btnThemeMode').addEventListener('click', async ()=>{
-    themeModeCurrent = getNextThemeMode(themeModeCurrent);
+  if($('btnThemeLight')) $('btnThemeLight').addEventListener('click', async ()=>{
+    themeModeCurrent = 'light';
     await syncSwitches();
   });
-  if($('btnBlockMode')) $('btnBlockMode').addEventListener('click', async ()=>{
-    const nextMode = getNextBlockMode(blockMode);
+  if($('btnThemeDark')) $('btnThemeDark').addEventListener('click', async ()=>{
+    themeModeCurrent = 'dark';
+    await syncSwitches();
+  });
+  if($('btnThemeAuto')) $('btnThemeAuto').addEventListener('click', async ()=>{
+    themeModeCurrent = 'auto';
+    await syncSwitches();
+  });
+  if($('btnBlockPage')) $('btnBlockPage').addEventListener('click', async ()=>{
+    blockMode = blockMode === 'page' ? 'off' : 'page';
+    await syncSwitches();
+  });
+  if($('btnBlockDomain')) $('btnBlockDomain').addEventListener('click', async ()=>{
+    blockMode = blockMode === 'domain' ? 'off' : 'domain';
+    await syncSwitches();
+  });
+  if($('btnBlockGlobal')) $('btnBlockGlobal').addEventListener('click', async ()=>{
+    const nextMode = blockMode === 'global' ? 'off' : 'global';
     if(nextMode === 'global'){
       const ok = window.confirm('将完全关闭插件（所有网页停用），确定继续吗？');
       if(!ok) return;

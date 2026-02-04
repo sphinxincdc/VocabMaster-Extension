@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>HORD English Companion</title>
+  <title>HORD·霍德英语学习管家</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="theme.css" />
   <style>
@@ -126,22 +126,45 @@
       cursor:pointer;
       white-space:nowrap;
     }
-    .modeBtn[data-mode="off"]{
-      background:rgba(34,197,94,.16);
-      border-color:rgba(34,197,94,.42);
-      color:#166534;
+    .toggleRow.modeRow{
+      align-items:center;
+      gap:8px;
     }
-    .modeBtn[data-mode="light"]{background:rgba(15,23,42,.05);border-color:var(--vb-border);color:var(--vb-text)}
-    .modeBtn[data-mode="auto"]{background:rgba(79,70,229,.12);border-color:rgba(79,70,229,.28);color:#3730a3}
-    .modeBtn[data-mode="dark"]{
+    .toggleRow.modeRow > div{
+      flex:0 0 126px;
+      min-width:126px;
+    }
+    .modeBtns{
+      flex:1;
+      min-width:0;
+      display:grid;
+      grid-template-columns:repeat(3, 65px);
+      gap:5px;
+      align-items:center;
+      justify-content:end;
+    }
+    .modeBtns .modeBtn{
+      width:65px;
+      text-align:center;
+      padding:7px 6px;
+      font-size:10px;
+      white-space:nowrap;
+    }
+    .modeBtn[data-active="1"][data-mode="light"]{
+      background:rgba(15,23,42,.08);
+      border-color:rgba(15,23,42,.26);
+      color:#0f172a;
+    }
+    .modeBtn[data-active="1"][data-mode="auto"]{background:rgba(79,70,229,.12);border-color:rgba(79,70,229,.28);color:#3730a3}
+    .modeBtn[data-active="1"][data-mode="dark"]{
       background:linear-gradient(135deg,#4f46e5 0%,#6366f1 100%);
       border-color:rgba(129,140,248,.85);
       color:#eef2ff;
       text-shadow:0 1px 0 rgba(0,0,0,.25);
     }
-    .modeBtn[data-mode="page"]{background:var(--vb-danger-bg);border-color:var(--vb-danger-bd);color:var(--vb-danger-fg)}
-    .modeBtn[data-mode="domain"]{background:var(--vb-danger-bg);border-color:var(--vb-danger-bd);color:var(--vb-danger-fg)}
-    .modeBtn[data-mode="global"]{background:#991b1b;border-color:#7f1d1d;color:#fff}
+    .modeBtn[data-active="1"][data-mode="page"]{background:rgba(253,242,242,.95);border-color:#fca5a5;color:#991b1b}
+    .modeBtn[data-active="1"][data-mode="domain"]{background:rgba(254,226,226,.96);border-color:#f87171;color:#991b1b}
+    .modeBtn[data-active="1"][data-mode="global"]{background:#991b1b;border-color:#7f1d1d;color:#fff}
     .modeBtn:active{transform:translateY(1px)}
 
     .toggleRow.toggle-block[data-on="1"]{border-color:var(--vb-danger-bd);background:var(--vb-danger-bg)}
@@ -184,7 +207,12 @@
   body.vb-force-dark .toggleRow.danger{background:transparent;border-color:var(--vb-danger-bd)}
   body.vb-force-dark .toggleRow.danger[data-on="1"]{background:#991b1b;border-color:#7f1d1d}
   body.vb-force-dark .track{background:rgba(167,139,250,.20);border-color:var(--vb-border)}
-  body.vb-force-dark .modeBtn[data-mode="off"]{background:rgba(34,197,94,.24);border-color:rgba(74,222,128,.52);color:#bbf7d0}
+  body.vb-force-dark .modeBtn{background:rgba(15,23,42,.3);border-color:var(--vb-border);color:var(--vb-text)}
+  body.vb-force-dark .modeBtn[data-active="1"][data-mode="light"]{background:rgba(226,232,240,.2);border-color:rgba(226,232,240,.45);color:#e2e8f0}
+  body.vb-force-dark .modeBtn[data-active="1"][data-mode="auto"]{background:rgba(99,102,241,.32);border-color:rgba(129,140,248,.66);color:#e0e7ff}
+  body.vb-force-dark .modeBtn[data-active="1"][data-mode="page"]{background:rgba(248,113,113,.22);border-color:rgba(248,113,113,.45);color:#fecaca}
+  body.vb-force-dark .modeBtn[data-active="1"][data-mode="domain"]{background:rgba(239,68,68,.30);border-color:rgba(248,113,113,.52);color:#fee2e2}
+  body.vb-force-dark .input::placeholder{color:rgba(237,233,254,.52)}
 
   @media (prefers-color-scheme: dark){
     body:not(.vb-force-light){
@@ -209,7 +237,12 @@
     body:not(.vb-force-light) .toggleRow.danger{background:transparent;border-color:var(--vb-danger-bd)}
     body:not(.vb-force-light) .toggleRow.danger[data-on="1"]{background:#991b1b;border-color:#7f1d1d}
     body:not(.vb-force-light) .track{background:rgba(167,139,250,.20);border-color:var(--vb-border)}
-    body:not(.vb-force-light) .modeBtn[data-mode="off"]{background:rgba(34,197,94,.24);border-color:rgba(74,222,128,.52);color:#bbf7d0}
+    body:not(.vb-force-light) .modeBtn{background:rgba(15,23,42,.3);border-color:var(--vb-border);color:var(--vb-text)}
+    body:not(.vb-force-light) .modeBtn[data-active="1"][data-mode="light"]{background:rgba(226,232,240,.2);border-color:rgba(226,232,240,.45);color:#e2e8f0}
+    body:not(.vb-force-light) .modeBtn[data-active="1"][data-mode="auto"]{background:rgba(99,102,241,.32);border-color:rgba(129,140,248,.66);color:#e0e7ff}
+    body:not(.vb-force-light) .modeBtn[data-active="1"][data-mode="page"]{background:rgba(248,113,113,.22);border-color:rgba(248,113,113,.45);color:#fecaca}
+    body:not(.vb-force-light) .modeBtn[data-active="1"][data-mode="domain"]{background:rgba(239,68,68,.30);border-color:rgba(248,113,113,.52);color:#fee2e2}
+    body:not(.vb-force-light) .input::placeholder{color:rgba(237,233,254,.52)}
   }
 
 </style>
@@ -218,8 +251,8 @@
   <div class="wrap">
     <div class="brand">
       <div class="brandLeft">
-        <div class="name"><span class="nameHord">HORD</span><span>English Companion</span></div>
-        <div class="subtitle">OWN YOUR WORDS</div>
+        <div class="name"><span class="nameHord">HORD</span><span class="nameDot">·</span><span>霍德英语学习管家</span></div>
+        <div class="subtitle">Yesterday, You Said Tomorrow</div>
       </div>
       <div class="brandRight">
         <button id="openOptions" class="gearBtn" title="设置">
@@ -276,19 +309,27 @@
       <div class="sysHead">⚙️ 插件控制</div>
       <div class="toggles" style="margin-top:0">
 
-        <div class="toggleRow" id="rowThemeMode" data-on="0">
+        <div class="toggleRow modeRow" id="rowThemeMode" data-on="0">
           <div>
-            <div class="label">夜间深色模式</div>
-            <div class="sub" id="themeModeHint">当前：跟随系统</div>
+            <div class="label">显示模式</div>
+            <div class="sub" id="themeModeHint">当前：自动</div>
           </div>
-          <button id="btnThemeMode" class="modeBtn" data-mode="auto" type="button">跟随系统</button>
+          <div class="modeBtns">
+            <button id="btnThemeLight" class="modeBtn" data-mode="light" data-active="0" type="button">日间</button>
+            <button id="btnThemeDark" class="modeBtn" data-mode="dark" data-active="0" type="button">夜间</button>
+            <button id="btnThemeAuto" class="modeBtn" data-mode="auto" data-active="1" type="button">自动</button>
+          </div>
         </div>
-        <div class="toggleRow" id="rowBlockMode" data-on="0">
+        <div class="toggleRow modeRow" id="rowBlockMode" data-on="0">
           <div>
             <div class="label">停用范围</div>
-            <div class="sub" id="blockModeHint">正常运行（点击右侧切换：此页/域名/全部）</div>
+            <div class="sub" id="blockModeHint">当前：正常运行</div>
           </div>
-          <button id="btnBlockMode" class="modeBtn" data-mode="off" type="button">正常运行</button>
+          <div class="modeBtns blockBtns">
+            <button id="btnBlockPage" class="modeBtn" data-mode="page" data-active="0" type="button">本页</button>
+            <button id="btnBlockDomain" class="modeBtn" data-mode="domain" data-active="0" type="button">此域名</button>
+            <button id="btnBlockGlobal" class="modeBtn" data-mode="global" data-active="0" type="button">完全关闭</button>
+          </div>
         </div>
       </div>
     </div>
